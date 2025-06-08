@@ -5,13 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beauty App - Sistema de Agendamento</title>
     
-    <!-- React -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel para JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -23,21 +16,640 @@
             margin: 0; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
         }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
-    <!-- Aplicação Principal -->
-    <script type="text/babel" src="app.js"></script>
-    
-    <!-- Inicialização -->
-    <script type="text/babel">
-        const { createElement } = React;
-        const { createRoot } = ReactDOM;
+    <script>
+        // Sistema Beauty App - Versão Vanilla JS
+        class BeautyApp {
+            constructor() {
+                this.currentView = 'login';
+                this.currentUser = null;
+                this.userType = '';
+                this.showPassword = false;
+                
+                // Dados simulados
+                this.users = [
+                    { id: 1, email: 'admin@salao.com', password: '123456', type: 'business', name: 'Salão Beleza Total', phone: '(48) 99999-9999', address: 'Rua das Flores, 123 - Tijucas/SC' },
+                    { id: 2, email: 'cliente@email.com', password: '123456', type: 'client', name: 'Maria Silva', phone: '(48) 88888-8888' }
+                ];
+                
+                this.businesses = [
+                    { 
+                        id: 1, 
+                        name: 'Salão Beleza Total', 
+                        email: 'admin@salao.com',
+                        phone: '(48) 99999-9999', 
+                        address: 'Rua das Flores, 123 - Tijucas/SC',
+                        rating: 4.8,
+                        image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'
+                    }
+                ];
+                
+                this.services = [
+                    { id: 1, businessId: 1, name: 'Corte Feminino', price: 45.00, duration: 60, description: 'Corte moderno e estiloso' },
+                    { id: 2, businessId: 1, name: 'Coloração', price: 120.00, duration: 120, description: 'Coloração completa com produtos de qualidade' },
+                    { id: 3, businessId: 1, name: 'Escova', price: 35.00, duration: 45, description: 'Escova modeladora' },
+                    { id: 4, businessId: 1, name: 'Manicure', price: 25.00, duration: 45, description: 'Cuidados completos para suas unhas' }
+                ];
+                
+                this.appointments = [
+                    { 
+                        id: 1, 
+                        clientId: 2, 
+                        businessId: 1, 
+                        serviceId: 1, 
+                        date: '2025-06-10', 
+                        time: '14:00', 
+                        status: 'confirmed',
+                        clientName: 'Maria Silva',
+                        serviceName: 'Corte Feminino',
+                        price: 45.00
+                    }
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.render();
+            }
+            
+            render() {
+                const root = document.getElementById('root');
+                
+                switch(this.currentView) {
+                    case 'login':
+                        root.innerHTML = this.renderLogin();
+                        break;
+                    case 'register':
+                        root.innerHTML = this.renderRegister();
+                        break;
+                    case 'business-dashboard':
+                        root.innerHTML = this.renderBusinessDashboard();
+                        break;
+                    case 'client-dashboard':
+                        root.innerHTML = this.renderClientDashboard();
+                        break;
+                    default:
+                        root.innerHTML = this.renderLogin();
+                }
+                
+                this.attachEvents();
+            }
+            
+            renderLogin() {
+                return `
+                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                            <div class="text-center mb-8">
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Beauty App</h1>
+                                <p class="text-gray-600">Sistema de agendamento para salões de beleza</p>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        placeholder="seu@email.com"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                    <div class="relative">
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent pr-12"
+                                            placeholder="Sua senha"
+                                        />
+                                        <button
+                                            id="toggle-password"
+                                            type="button"
+                                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                        >
+                                            👁️
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button
+                                    id="login-btn"
+                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                >
+                                    Entrar
+                                </button>
+                            </div>
+
+                            <div class="mt-6 text-center">
+                                <p class="text-gray-600 mb-4">Não tem uma conta?</p>
+                                <div class="space-y-3">
+                                    <button
+                                        id="register-client-btn"
+                                        class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                                    >
+                                        👤 Cadastrar como Cliente
+                                    </button>
+                                    <button
+                                        id="register-business-btn"
+                                        class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300"
+                                    >
+                                        🏢 Cadastrar como Empresa
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 text-center">
+                                <p class="text-sm text-gray-500">
+                                    Demo: admin@salao.com / cliente@email.com (senha: 123456)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderRegister() {
+                return `
+                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                            <div class="text-center mb-8">
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                                    ${this.userType === 'business' ? 'Cadastro de Empresa' : 'Cadastro de Cliente'}
+                                </h1>
+                                <p class="text-gray-600">Preencha os dados abaixo</p>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        ${this.userType === 'business' ? 'Nome da Empresa' : 'Nome Completo'}
+                                    </label>
+                                    <input
+                                        id="reg-name"
+                                        type="text"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input
+                                        id="reg-email"
+                                        type="email"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                                    <input
+                                        id="reg-phone"
+                                        type="tel"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        placeholder="(48) 99999-9999"
+                                    />
+                                </div>
+
+                                ${this.userType === 'business' ? `
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
+                                    <input
+                                        id="reg-address"
+                                        type="text"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    />
+                                </div>
+                                ` : ''}
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                    <input
+                                        id="reg-password"
+                                        type="password"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Senha</label>
+                                    <input
+                                        id="reg-confirm-password"
+                                        type="password"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <button
+                                    id="register-btn"
+                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                >
+                                    Cadastrar
+                                </button>
+                            </div>
+
+                            <div class="mt-6 text-center">
+                                <button
+                                    id="back-to-login"
+                                    class="text-pink-600 hover:text-pink-700 font-medium"
+                                >
+                                    Voltar ao Login
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderBusinessDashboard() {
+                const userServices = this.services.filter(s => s.businessId === this.currentUser.id);
+                const userAppointments = this.appointments.filter(a => a.businessId === this.currentUser.id);
+                
+                return `
+                    <div class="min-h-screen bg-gray-50">
+                        <!-- Header -->
+                        <header class="bg-white shadow-sm border-b">
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div class="flex justify-between items-center py-4">
+                                    <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser.name}</h1>
+                                    <button
+                                        id="logout-btn"
+                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                    >
+                                        Sair
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                            <!-- Stats -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <div class="flex items-center">
+                                        <div class="text-3xl mr-4">📅</div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Agendamentos Hoje</p>
+                                            <p class="text-2xl font-semibold text-gray-900">${userAppointments.length}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <div class="flex items-center">
+                                        <div class="text-3xl mr-4">⚙️</div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Serviços Ativos</p>
+                                            <p class="text-2xl font-semibold text-gray-900">${userServices.length}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <div class="flex items-center">
+                                        <div class="text-3xl mr-4">⭐</div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Avaliação</p>
+                                            <p class="text-2xl font-semibold text-gray-900">4.8</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <!-- Serviços -->
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Meus Serviços</h2>
+                                    
+                                    <div class="space-y-3">
+                                        ${userServices.map(service => `
+                                            <div class="border border-gray-200 rounded-lg p-4">
+                                                <h3 class="font-semibold text-gray-900">${service.name}</h3>
+                                                <p class="text-sm text-gray-600">${service.description}</p>
+                                                <div class="flex items-center mt-2 text-sm text-gray-500">
+                                                    <span>R$ ${service.price.toFixed(2)}</span>
+                                                    <span class="mx-2">•</span>
+                                                    <span>⏱️ ${service.duration} min</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- Agendamentos -->
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Agendamentos</h2>
+                                    
+                                    <div class="space-y-4">
+                                        ${userAppointments.map(appointment => `
+                                            <div class="border border-gray-200 rounded-lg p-4">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <h3 class="font-semibold text-gray-900">${appointment.clientName}</h3>
+                                                        <p class="text-sm text-gray-600">${appointment.serviceName}</p>
+                                                        <div class="flex items-center mt-2 text-sm text-gray-500">
+                                                            <span>📅 ${appointment.date}</span>
+                                                            <span class="mx-2">•</span>
+                                                            <span>⏰ ${appointment.time}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <span class="text-lg font-semibold text-green-600">
+                                                            R$ ${appointment.price.toFixed(2)}
+                                                        </span>
+                                                        <div class="mt-1">
+                                                            <span class="inline-flex px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                                                                Confirmado
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        
+                                        ${userAppointments.length === 0 ? '<p class="text-gray-500 text-center py-8">Nenhum agendamento para hoje</p>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderClientDashboard() {
+                const userAppointments = this.appointments.filter(a => a.clientId === this.currentUser.id);
+                
+                return `
+                    <div class="min-h-screen bg-gray-50">
+                        <header class="bg-white shadow-sm border-b">
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div class="flex justify-between items-center py-4">
+                                    <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser.name}!</h1>
+                                    <button
+                                        id="logout-btn"
+                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                    >
+                                        Sair
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <!-- Estabelecimentos -->
+                                <div class="lg:col-span-2">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Estabelecimentos Próximos</h2>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        ${this.businesses.map(business => `
+                                            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                                                <img
+                                                    src="${business.image}"
+                                                    alt="${business.name}"
+                                                    class="w-full h-48 object-cover rounded-t-lg"
+                                                />
+                                                <div class="p-4">
+                                                    <h3 class="font-semibold text-gray-900">${business.name}</h3>
+                                                    <div class="flex items-center mt-2">
+                                                        <span class="text-sm text-gray-600">📍 ${business.address}</span>
+                                                    </div>
+                                                    <div class="flex items-center mt-1">
+                                                        <span class="text-sm text-gray-600">📞 ${business.phone}</span>
+                                                    </div>
+                                                    <div class="flex items-center justify-between mt-3">
+                                                        <div class="flex items-center">
+                                                            <span class="text-sm text-gray-600">⭐ ${business.rating}</span>
+                                                        </div>
+                                                        <span class="text-pink-600 text-sm font-medium cursor-pointer hover:text-pink-700">Ver serviços →</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- Meus Agendamentos -->
+                                <div>
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Meus Agendamentos</h2>
+                                    
+                                    <div class="space-y-4">
+                                        ${userAppointments.map(appointment => `
+                                            <div class="bg-white rounded-lg shadow p-4">
+                                                <h3 class="font-semibold text-gray-900">${appointment.serviceName}</h3>
+                                                <div class="flex items-center mt-2 text-sm text-gray-500">
+                                                    <span>📅 ${appointment.date}</span>
+                                                </div>
+                                                <div class="flex items-center mt-1 text-sm text-gray-500">
+                                                    <span>⏰ ${appointment.time}</span>
+                                                </div>
+                                                <div class="flex items-center justify-between mt-3">
+                                                    <span class="text-green-600 font-semibold">R$ ${appointment.price.toFixed(2)}</span>
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                                                        Confirmado
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        
+                                        ${userAppointments.length === 0 ? '<p class="text-gray-500 text-center py-8">Nenhum agendamento</p>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            attachEvents() {
+                // Login events
+                const loginBtn = document.getElementById('login-btn');
+                if (loginBtn) {
+                    loginBtn.addEventListener('click', () => this.handleLogin());
+                }
+                
+                const togglePassword = document.getElementById('toggle-password');
+                if (togglePassword) {
+                    togglePassword.addEventListener('click', () => this.togglePassword());
+                }
+                
+                const registerClientBtn = document.getElementById('register-client-btn');
+                if (registerClientBtn) {
+                    registerClientBtn.addEventListener('click', () => {
+                        this.userType = 'client';
+                        this.currentView = 'register';
+                        this.render();
+                    });
+                }
+                
+                const registerBusinessBtn = document.getElementById('register-business-btn');
+                if (registerBusinessBtn) {
+                    registerBusinessBtn.addEventListener('click', () => {
+                        this.userType = 'business';
+                        this.currentView = 'register';
+                        this.render();
+                    });
+                }
+                
+                // Register events
+                const registerBtn = document.getElementById('register-btn');
+                if (registerBtn) {
+                    registerBtn.addEventListener('click', () => this.handleRegister());
+                }
+                
+                const backToLogin = document.getElementById('back-to-login');
+                if (backToLogin) {
+                    backToLogin.addEventListener('click', () => {
+                        this.currentView = 'login';
+                        this.render();
+                    });
+                }
+                
+                // Logout events
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', () => this.handleLogout());
+                }
+                
+                // Enter key support
+                document.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        if (this.currentView === 'login') {
+                            this.handleLogin();
+                        } else if (this.currentView === 'register') {
+                            this.handleRegister();
+                        }
+                    }
+                });
+            }
+            
+            handleLogin() {
+                const email = document.getElementById('email')?.value || '';
+                const password = document.getElementById('password')?.value || '';
+                
+                if (!email || !password) {
+                    alert('Por favor, preencha email e senha');
+                    return;
+                }
+                
+                const user = this.users.find(u => u.email === email && u.password === password);
+                
+                if (user) {
+                    this.currentUser = user;
+                    this.currentView = user.type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                    this.render();
+                } else {
+                    alert('Email ou senha inválidos!');
+                }
+            }
+            
+            handleRegister() {
+                const name = document.getElementById('reg-name')?.value || '';
+                const email = document.getElementById('reg-email')?.value || '';
+                const phone = document.getElementById('reg-phone')?.value || '';
+                const password = document.getElementById('reg-password')?.value || '';
+                const confirmPassword = document.getElementById('reg-confirm-password')?.value || '';
+                const address = document.getElementById('reg-address')?.value || '';
+                
+                if (!name || !email || !phone || !password || !confirmPassword) {
+                    alert('Por favor, preencha todos os campos obrigatórios');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    alert('As senhas não coincidem!');
+                    return;
+                }
+                
+                if (this.users.find(u => u.email === email)) {
+                    alert('Email já cadastrado!');
+                    return;
+                }
+                
+                const newUser = {
+                    id: this.users.length + 1,
+                    email,
+                    password,
+                    type: this.userType,
+                    name,
+                    phone,
+                    address
+                };
+                
+                this.users.push(newUser);
+                
+                if (this.userType === 'business') {
+                    const newBusiness = {
+                        id: this.businesses.length + 1,
+                        name,
+                        email,
+                        phone,
+                        address,
+                        rating: 5.0,
+                        image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'
+                    };
+                    this.businesses.push(newBusiness);
+                }
+                
+                alert('Cadastro realizado com sucesso!');
+                this.currentView = 'login';
+                this.render();
+            }
+            
+            handleLogout() {
+                this.currentUser = null;
+                this.currentView = 'login';
+                this.render();
+            }
+            
+            togglePassword() {
+                const passwordInput = document.getElementById('password');
+                const toggleBtn = document.getElementById('toggle-password');
+                
+                if (passwordInput && toggleBtn) {
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        toggleBtn.textContent = '🙈';
+                    } else {
+                        passwordInput.type = 'password';
+                        toggleBtn.textContent = '👁️';
+                    }
+                }
+            }
+        }
         
-        const root = createRoot(document.getElementById('root'));
-        root.render(createElement(BeautyApp));
+        // Inicializar aplicação quando a página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            new BeautyApp();
+        });
+        
+        // Fallback caso DOMContentLoaded já tenha disparado
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                new BeautyApp();
+            });
+        } else {
+            new BeautyApp();
+        }
     </script>
 </body>
 </html>
