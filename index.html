@@ -518,7 +518,7 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        ✅ Sistema conectado ao Supabase - v2.1
+                                        ✅ Beauty App v3.0 - Gerenciamento Completo
                                     </p>
                                 </div>
                             </div>
@@ -702,58 +702,350 @@
                 renderBusinessDashboard() {
                     return `
                         <div class="min-h-screen bg-gray-50">
+                            <!-- Header -->
                             <header class="bg-white shadow-sm border-b">
                                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                                     <div class="flex justify-between items-center py-4">
-                                        <h1 class="text-2xl font-bold text-gray-900">🏢 Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
-                                        <button
-                                            id="logout-btn"
-                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-                                        >
-                                            Sair
-                                        </button>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                <span class="text-white font-bold">💄</span>
+                                            </div>
+                                            <div>
+                                                <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
+                                                <p class="text-sm text-gray-500">Gerencie seus serviços e agendamentos</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <button
+                                                id="customize-btn"
+                                                class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition duration-300 flex items-center gap-2"
+                                            >
+                                                🎨 Personalizar
+                                            </button>
+                                            <button
+                                                id="logout-btn"
+                                                class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                            >
+                                                Sair
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </header>
 
                             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <div class="bg-white rounded-lg shadow p-6">
-                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Sistema Conectado!</h2>
-                                        <p class="text-gray-600 mb-4">
-                                            Parabéns! Seu Beauty App está funcionando com Supabase.
-                                        </p>
-                                        <div class="grid grid-cols-1 gap-4">
-                                            <div class="bg-green-50 p-4 rounded-lg">
-                                                <h3 class="font-semibold text-green-800">✅ Banco de Dados</h3>
-                                                <p class="text-sm text-green-600">Supabase conectado e funcionando</p>
+                                <!-- Cards de Status -->
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-blue-100">Estabelecimentos</p>
+                                                <p class="text-3xl font-bold">${this.businesses.length}</p>
                                             </div>
-                                            <div class="bg-blue-50 p-4 rounded-lg">
-                                                <h3 class="font-semibold text-blue-800">📧 Autenticação</h3>
-                                                <p class="text-sm text-blue-600">Sistema de login e verificação ativo</p>
-                                            </div>
-                                            <div class="bg-purple-50 p-4 rounded-lg">
-                                                <h3 class="font-semibold text-purple-800">🔒 Segurança</h3>
-                                                <p class="text-sm text-purple-600">Políticas RLS configuradas</p>
-                                            </div>
+                                            <div class="text-4xl opacity-80">🏢</div>
                                         </div>
                                     </div>
                                     
-                                    <div class="bg-white rounded-lg shadow p-6">
-                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">📊 Estatísticas</h2>
-                                        <div class="space-y-4">
-                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                                <span class="text-gray-600">Estabelecimentos</span>
-                                                <span class="font-semibold text-blue-600">${this.businesses.length}</span>
+                                    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-green-100">Serviços</p>
+                                                <p class="text-3xl font-bold">${this.services.length}</p>
                                             </div>
-                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                                <span class="text-gray-600">Serviços</span>
-                                                <span class="font-semibold text-green-600">${this.services.length}</span>
+                                            <div class="text-4xl opacity-80">💼</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-purple-100">Agendamentos</p>
+                                                <p class="text-3xl font-bold">${this.appointments.length}</p>
                                             </div>
-                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                                <span class="text-gray-600">Agendamentos</span>
-                                                <span class="font-semibold text-purple-600">${this.appointments.length}</span>
+                                            <div class="text-4xl opacity-80">📅</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-yellow-100">Receita</p>
+                                                <p class="text-3xl font-bold">R$ 0</p>
                                             </div>
+                                            <div class="text-4xl opacity-80">💰</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Seção Principal -->
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    <!-- Gerenciamento de Serviços -->
+                                    <div class="lg:col-span-2">
+                                        <div class="bg-white rounded-lg shadow">
+                                            <div class="p-6 border-b border-gray-200">
+                                                <div class="flex items-center justify-between">
+                                                    <h2 class="text-xl font-semibold text-gray-900">💼 Meus Serviços</h2>
+                                                    <button
+                                                        id="add-service-btn"
+                                                        class="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-pink-600 hover:to-purple-700 transition duration-300 flex items-center gap-2"
+                                                    >
+                                                        ➕ Adicionar Serviço
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="p-6">
+                                                ${this.services.length > 0 ? `
+                                                    <div class="space-y-4">
+                                                        ${this.services.map(service => `
+                                                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
+                                                                <div class="flex items-center justify-between">
+                                                                    <div class="flex-1">
+                                                                        <h3 class="text-lg font-medium text-gray-900">${service.name}</h3>
+                                                                        <p class="text-gray-600 text-sm mt-1">${service.description || 'Sem descrição'}</p>
+                                                                        <div class="flex items-center gap-4 mt-2">
+                                                                            <span class="text-sm text-gray-500">⏱️ ${service.duration_minutes} min</span>
+                                                                            <span class="text-lg font-semibold text-green-600">R$ ${service.price}</span>
+                                                                            <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                                                                ${service.active ? 'Ativo' : 'Inativo'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="flex items-center gap-2">
+                                                                        <button
+                                                                            onclick="app.editService('${service.id}')"
+                                                                            class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition duration-200"
+                                                                            title="Editar"
+                                                                        >
+                                                                            ✏️
+                                                                        </button>
+                                                                        <button
+                                                                            onclick="app.toggleServiceStatus('${service.id}')"
+                                                                            class="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-50 transition duration-200"
+                                                                            title="${service.active ? 'Desativar' : 'Ativar'}"
+                                                                        >
+                                                                            ${service.active ? '🚫' : '✅'}
+                                                                        </button>
+                                                                        <button
+                                                                            onclick="app.deleteService('${service.id}')"
+                                                                            class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition duration-200"
+                                                                            title="Excluir"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                ` : `
+                                                    <div class="text-center py-12">
+                                                        <div class="text-6xl mb-4">💼</div>
+                                                        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum serviço cadastrado</h3>
+                                                        <p class="text-gray-600 mb-6">Comece adicionando seus primeiros serviços para que os clientes possam agendar.</p>
+                                                        <button
+                                                            id="add-first-service-btn"
+                                                            class="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                                        >
+                                                            ➕ Adicionar Primeiro Serviço
+                                                        </button>
+                                                    </div>
+                                                `}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sidebar -->
+                                    <div class="space-y-6">
+                                        <!-- Agendamentos Recentes -->
+                                        <div class="bg-white rounded-lg shadow">
+                                            <div class="p-6 border-b border-gray-200">
+                                                <h3 class="text-lg font-semibold text-gray-900">📅 Próximos Agendamentos</h3>
+                                            </div>
+                                            <div class="p-6">
+                                                ${this.appointments.length > 0 ? `
+                                                    <div class="space-y-3">
+                                                        ${this.appointments.slice(0, 3).map(appointment => `
+                                                            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                                                <div class="w-2 h-8 bg-blue-500 rounded"></div>
+                                                                <div class="flex-1">
+                                                                    <p class="font-medium text-gray-900">${appointment.client?.name || 'Cliente'}</p>
+                                                                    <p class="text-sm text-gray-600">${appointment.service?.name || 'Serviço'}</p>
+                                                                    <p class="text-xs text-gray-500">${appointment.appointment_date} às ${appointment.appointment_time}</p>
+                                                                </div>
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                ` : `
+                                                    <p class="text-gray-600 text-center py-4">Nenhum agendamento hoje</p>
+                                                `}
+                                            </div>
+                                        </div>
+
+                                        <!-- Estatísticas Rápidas -->
+                                        <div class="bg-white rounded-lg shadow">
+                                            <div class="p-6 border-b border-gray-200">
+                                                <h3 class="text-lg font-semibold text-gray-900">📊 Status do Sistema</h3>
+                                            </div>
+                                            <div class="p-6 space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-gray-600">Banco de Dados</span>
+                                                    <span class="text-green-600 font-medium">✅ Online</span>
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-gray-600">Autenticação</span>
+                                                    <span class="text-green-600 font-medium">✅ Ativo</span>
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-gray-600">Segurança</span>
+                                                    <span class="text-green-600 font-medium">🔒 RLS Ativo</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modal para Adicionar/Editar Serviço -->
+                            <div id="service-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                                <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 id="service-modal-title" class="text-2xl font-bold text-gray-900">➕ Adicionar Serviço</h2>
+                                        <button id="close-service-modal" class="text-gray-500 hover:text-gray-700">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <form id="service-form" class="space-y-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Serviço</label>
+                                            <input
+                                                id="service-name"
+                                                type="text"
+                                                required
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                placeholder="Ex: Corte Feminino"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                                            <textarea
+                                                id="service-description"
+                                                rows="3"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                placeholder="Descreva o serviço..."
+                                            ></textarea>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Duração (min)</label>
+                                                <input
+                                                    id="service-duration"
+                                                    type="number"
+                                                    required
+                                                    min="15"
+                                                    step="15"
+                                                    value="60"
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Preço (R$)</label>
+                                                <input
+                                                    id="service-price"
+                                                    type="number"
+                                                    required
+                                                    min="0"
+                                                    step="0.01"
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-4 pt-4">
+                                            <button
+                                                type="submit"
+                                                id="save-service-btn"
+                                                class="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                            >
+                                                💾 Salvar Serviço
+                                            </button>
+                                            <button
+                                                type="button"
+                                                id="cancel-service-btn"
+                                                class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Modal de Personalização -->
+                            <div id="customize-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                                <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg mx-4">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-2xl font-bold text-gray-900">🎨 Personalizar Empresa</h2>
+                                        <button id="close-customize-modal" class="text-gray-500 hover:text-gray-700">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Logo da Empresa</label>
+                                            <div class="flex items-center gap-4">
+                                                <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                    <span class="text-white text-2xl">💄</span>
+                                                </div>
+                                                <button class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+                                                    📸 Alterar Logo
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Cor Principal</label>
+                                            <div class="grid grid-cols-6 gap-3">
+                                                <button class="w-10 h-10 bg-pink-500 rounded-lg ring-2 ring-pink-300"></button>
+                                                <button class="w-10 h-10 bg-purple-500 rounded-lg"></button>
+                                                <button class="w-10 h-10 bg-blue-500 rounded-lg"></button>
+                                                <button class="w-10 h-10 bg-green-500 rounded-lg"></button>
+                                                <button class="w-10 h-10 bg-red-500 rounded-lg"></button>
+                                                <button class="w-10 h-10 bg-yellow-500 rounded-lg"></button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Tema</label>
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <button class="p-4 border-2 border-pink-300 rounded-lg text-left">
+                                                    <div class="font-medium">🌸 Feminino</div>
+                                                    <div class="text-sm text-gray-600">Rosa e roxo</div>
+                                                </button>
+                                                <button class="p-4 border-2 border-gray-200 rounded-lg text-left">
+                                                    <div class="font-medium">⚫ Moderno</div>
+                                                    <div class="text-sm text-gray-600">Preto e branco</div>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex gap-4 pt-4">
+                                            <button class="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300">
+                                                💾 Salvar Personalização
+                                            </button>
+                                            <button id="cancel-customize-btn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300">
+                                                Cancelar
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -892,6 +1184,64 @@
                     if (logoutBtn) {
                         logoutBtn.addEventListener('click', () => this.handleLogout());
                     }
+
+                    // Botões de Serviços
+                    const addServiceBtn = document.getElementById('add-service-btn');
+                    const addFirstServiceBtn = document.getElementById('add-first-service-btn');
+                    if (addServiceBtn) {
+                        addServiceBtn.addEventListener('click', () => this.openServiceModal());
+                    }
+                    if (addFirstServiceBtn) {
+                        addFirstServiceBtn.addEventListener('click', () => this.openServiceModal());
+                    }
+
+                    // Modal de Serviços
+                    const serviceModal = document.getElementById('service-modal');
+                    const closeServiceModal = document.getElementById('close-service-modal');
+                    const cancelServiceBtn = document.getElementById('cancel-service-btn');
+                    const serviceForm = document.getElementById('service-form');
+
+                    if (closeServiceModal) {
+                        closeServiceModal.addEventListener('click', () => this.closeServiceModal());
+                    }
+                    if (cancelServiceBtn) {
+                        cancelServiceBtn.addEventListener('click', () => this.closeServiceModal());
+                    }
+                    if (serviceForm) {
+                        serviceForm.addEventListener('submit', (e) => this.handleSaveService(e));
+                    }
+                    if (serviceModal) {
+                        serviceModal.addEventListener('click', (e) => {
+                            if (e.target === serviceModal) {
+                                this.closeServiceModal();
+                            }
+                        });
+                    }
+
+                    // Botão de Personalização
+                    const customizeBtn = document.getElementById('customize-btn');
+                    if (customizeBtn) {
+                        customizeBtn.addEventListener('click', () => this.openCustomizeModal());
+                    }
+
+                    // Modal de Personalização
+                    const customizeModal = document.getElementById('customize-modal');
+                    const closeCustomizeModal = document.getElementById('close-customize-modal');
+                    const cancelCustomizeBtn = document.getElementById('cancel-customize-btn');
+
+                    if (closeCustomizeModal) {
+                        closeCustomizeModal.addEventListener('click', () => this.closeCustomizeModal());
+                    }
+                    if (cancelCustomizeBtn) {
+                        cancelCustomizeBtn.addEventListener('click', () => this.closeCustomizeModal());
+                    }
+                    if (customizeModal) {
+                        customizeModal.addEventListener('click', (e) => {
+                            if (e.target === customizeModal) {
+                                this.closeCustomizeModal();
+                            }
+                        });
+                    }
                     
                     // Enter key support
                     document.addEventListener('keypress', (e) => {
@@ -903,6 +1253,14 @@
                             } else if (this.currentView === 'forgot-password') {
                                 this.handleForgotPassword();
                             }
+                        }
+                    });
+
+                    // ESC key support para modals
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            this.closeServiceModal();
+                            this.closeCustomizeModal();
                         }
                     });
                 }
@@ -1088,11 +1446,207 @@
                         this.showMessage('Erro no logout: ' + error.message, 'error');
                     }
                 }
+
+                // ========================================
+                // GERENCIAMENTO DE SERVIÇOS
+                // ========================================
+
+                openServiceModal(serviceId = null) {
+                    this.editingService = serviceId;
+                    const modal = document.getElementById('service-modal');
+                    const title = document.getElementById('service-modal-title');
+                    const form = document.getElementById('service-form');
+                    
+                    if (serviceId) {
+                        // Editando serviço existente
+                        const service = this.services.find(s => s.id === serviceId);
+                        if (service) {
+                            title.textContent = '✏️ Editar Serviço';
+                            document.getElementById('service-name').value = service.name;
+                            document.getElementById('service-description').value = service.description || '';
+                            document.getElementById('service-duration').value = service.duration_minutes;
+                            document.getElementById('service-price').value = service.price;
+                        }
+                    } else {
+                        // Adicionando novo serviço
+                        title.textContent = '➕ Adicionar Serviço';
+                        form.reset();
+                        document.getElementById('service-duration').value = 60;
+                    }
+                    
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.getElementById('service-name').focus();
+                }
+
+                closeServiceModal() {
+                    const modal = document.getElementById('service-modal');
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    this.editingService = null;
+                }
+
+                async handleSaveService(e) {
+                    e.preventDefault();
+                    
+                    const name = document.getElementById('service-name').value.trim();
+                    const description = document.getElementById('service-description').value.trim();
+                    const duration = parseInt(document.getElementById('service-duration').value);
+                    const price = parseFloat(document.getElementById('service-price').value);
+                    const saveBtn = document.getElementById('save-service-btn');
+                    
+                    if (!name || !duration || !price) {
+                        this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
+                        return;
+                    }
+
+                    if (duration < 15) {
+                        this.showMessage('A duração mínima é de 15 minutos', 'error');
+                        return;
+                    }
+
+                    if (price <= 0) {
+                        this.showMessage('O preço deve ser maior que zero', 'error');
+                        return;
+                    }
+
+                    try {
+                        saveBtn.textContent = 'Salvando...';
+                        saveBtn.disabled = true;
+
+                        // Buscar o business_id da empresa
+                        const { data: businessData } = await supabase
+                            .from('businesses')
+                            .select('id')
+                            .eq('user_id', this.currentUser.id)
+                            .single();
+
+                        if (!businessData) {
+                            throw new Error('Estabelecimento não encontrado');
+                        }
+
+                        const serviceData = {
+                            business_id: businessData.id,
+                            name: name,
+                            description: description,
+                            duration_minutes: duration,
+                            price: price,
+                            active: true
+                        };
+
+                        if (this.editingService) {
+                            // Atualizar serviço existente
+                            const { error } = await supabase
+                                .from('services')
+                                .update(serviceData)
+                                .eq('id', this.editingService);
+
+                            if (error) throw error;
+                            this.showMessage('Serviço atualizado com sucesso!', 'success');
+                        } else {
+                            // Criar novo serviço
+                            const { error } = await supabase
+                                .from('services')
+                                .insert([serviceData]);
+
+                            if (error) throw error;
+                            this.showMessage('Serviço adicionado com sucesso!', 'success');
+                        }
+
+                        this.closeServiceModal();
+                        await this.loadData();
+                        this.render();
+
+                    } catch (error) {
+                        console.error('❌ Erro ao salvar serviço:', error);
+                        this.showMessage('Erro ao salvar serviço: ' + error.message, 'error');
+                    } finally {
+                        saveBtn.textContent = '💾 Salvar Serviço';
+                        saveBtn.disabled = false;
+                    }
+                }
+
+                editService(serviceId) {
+                    this.openServiceModal(serviceId);
+                }
+
+                async toggleServiceStatus(serviceId) {
+                    try {
+                        const service = this.services.find(s => s.id === serviceId);
+                        if (!service) return;
+
+                        const { error } = await supabase
+                            .from('services')
+                            .update({ active: !service.active })
+                            .eq('id', serviceId);
+
+                        if (error) throw error;
+
+                        this.showMessage(
+                            `Serviço ${service.active ? 'desativado' : 'ativado'} com sucesso!`, 
+                            'success'
+                        );
+
+                        await this.loadData();
+                        this.render();
+
+                    } catch (error) {
+                        console.error('❌ Erro ao alterar status do serviço:', error);
+                        this.showMessage('Erro ao alterar status: ' + error.message, 'error');
+                    }
+                }
+
+                async deleteService(serviceId) {
+                    const service = this.services.find(s => s.id === serviceId);
+                    if (!service) return;
+
+                    if (!confirm(`Tem certeza que deseja excluir o serviço "${service.name}"?`)) {
+                        return;
+                    }
+
+                    try {
+                        const { error } = await supabase
+                            .from('services')
+                            .delete()
+                            .eq('id', serviceId);
+
+                        if (error) throw error;
+
+                        this.showMessage('Serviço excluído com sucesso!', 'success');
+                        await this.loadData();
+                        this.render();
+
+                    } catch (error) {
+                        console.error('❌ Erro ao excluir serviço:', error);
+                        this.showMessage('Erro ao excluir serviço: ' + error.message, 'error');
+                    }
+                }
+
+                // ========================================
+                // PERSONALIZAÇÃO
+                // ========================================
+
+                openCustomizeModal() {
+                    const modal = document.getElementById('customize-modal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+
+                closeCustomizeModal() {
+                    const modal = document.getElementById('customize-modal');
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
             }
             
             // Inicializar aplicação
             console.log('🚀 Iniciando Beauty App...');
             window.app = new BeautyApp();
+            
+            // Tornar métodos disponíveis globalmente para os botões inline
+            window.app.editService = window.app.editService.bind(window.app);
+            window.app.toggleServiceStatus = window.app.toggleServiceStatus.bind(window.app);
+            window.app.deleteService = window.app.deleteService.bind(window.app);
         }
     </script>
 </body>
