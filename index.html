@@ -11,9 +11,6 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
     <style>
         body { 
             margin: 0; 
@@ -42,1783 +39,838 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+            <div class="text-center">
+                <div class="loading mb-4"></div>
+                <p>Carregando Beauty App...</p>
+            </div>
+        </div>
+    </div>
     
     <script>
         // ========================================
         // CONFIGURAÇÃO DO SUPABASE
         // ========================================
-        // ⚠️ IMPORTANTE: Substitua pelas suas credenciais do Supabase
-        const SUPABASE_URL = 'https://ueonkhdbuzujdfyhookt.supabase.co';
+        
+        // Suas credenciais do Supabase
+        const SUPABASE_URL = 'https://ueonkhdbuzujdfyhokt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhvb2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MzI3ODQsImV4cCI6MjA2NTAwODc4NH0.3zX18Z-Gz3tZ4YQti0wuhtStxPIc8jN8m_lrz_W2ikE';
         
-        // Verificar se as credenciais foram configuradas
-        if (SUPABASE_URL.includes('seu-project-id') || SUPABASE_ANON_KEY.includes('sua-anon-key')) {
-            console.error('⚠️ CONFIGURE SUAS CREDENCIAIS DO SUPABASE!');
-            document.body.innerHTML = `
+        // Verificar se o Supabase foi carregado
+        if (typeof window.supabase === 'undefined') {
+            console.error('❌ Supabase não foi carregado!');
+            document.getElementById('root').innerHTML = `
                 <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
-                        <div class="text-6xl mb-4">⚠️</div>
-                        <h1 class="text-2xl font-bold text-red-600 mb-4">Configuração Necessária</h1>
-                        <p class="text-gray-600 mb-4">Por favor, configure suas credenciais do Supabase no código:</p>
-                        <div class="bg-gray-100 p-3 rounded text-left text-sm">
-                            <p><strong>SUPABASE_URL:</strong> Sua URL do projeto</p>
-                            <p><strong>SUPABASE_ANON_KEY:</strong> Sua chave anônima</p>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-4">Encontre essas informações em: Settings → API no Supabase</p>
+                        <div class="text-6xl mb-4">❌</div>
+                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Carregamento</h1>
+                        <p class="text-gray-600 mb-4">O Supabase não foi carregado corretamente.</p>
+                        <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                            Tentar Novamente
+                        </button>
                     </div>
                 </div>
             `;
         } else {
-            // Inicializar Supabase apenas se as credenciais estiverem configuradas
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Inicializar Supabase
+            let supabase;
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase conectado com sucesso!');
+                
+                // Testar conexão
+                supabase.auth.getSession().then(result => {
+                    console.log('🔗 Teste de conexão:', result);
+                    initApp();
+                }).catch(error => {
+                    console.error('❌ Erro na conexão:', error);
+                    showConnectionError();
+                });
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                showConnectionError();
+            }
+        }
+        
+        function showConnectionError() {
+            document.getElementById('root').innerHTML = `
+                <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Conexão</h1>
+                        <p class="text-gray-600 mb-4">Não foi possível conectar ao banco de dados.</p>
+                        <p class="text-sm text-gray-500 mb-4">Verifique suas credenciais do Supabase.</p>
+                        <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                            Tentar Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
         }
 
         // ========================================
-        // BEAUTY APP COM SUPABASE
+        // BEAUTY APP
         // ========================================
-        class BeautyApp {
-            constructor() {
-                this.currentView = 'login';
-                this.currentUser = null;
-                this.userType = '';
-                this.showPassword = false;
-                this.selectedBusiness = null;
-                this.selectedService = null;
-                this.editingService = null;
-                this.currentDate = new Date().toISOString().split('T')[0];
-                this.loading = false;
-                this.pendingVerificationEmail = null;
-                
-                // Cache de dados
-                this.businesses = [];
-                this.services = [];
-                this.appointments = [];
-                
-                this.init();
-            }
-            
-            async init() {
-                // Verificar se usuário já está logado
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    await this.loadUserData(session.user);
-                    this.currentView = this.currentUser.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
-                }
-                
-                // Escutar mudanças de autenticação
-                supabase.auth.onAuthStateChange(async (event, session) => {
-                    if (event === 'SIGNED_IN') {
-                        await this.loadUserData(session.user);
-                        this.currentView = this.currentUser.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
-                        this.render();
-                    } else if (event === 'SIGNED_OUT') {
-                        this.currentUser = null;
-                        this.currentView = 'login';
-                        this.render();
-                    }
-                });
-                
-                await this.loadData();
-                this.render();
-            }
-            
-            async loadUserData(authUser) {
-                try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', authUser.id)
-                        .single();
-                    
-                    if (error) throw error;
-                    this.currentUser = data;
-                } catch (error) {
-                    console.error('Erro ao carregar dados do usuário:', error);
-                }
-            }
-            
-            async loadData() {
-                try {
-                    // Carregar estabelecimentos
-                    const { data: businessData, error: businessError } = await supabase
-                        .from('businesses')
-                        .select('*')
-                        .order('name');
-                    
-                    if (businessError) throw businessError;
-                    this.businesses = businessData || [];
-                    
-                    // Carregar serviços
-                    const { data: serviceData, error: serviceError } = await supabase
-                        .from('services')
-                        .select('*')
-                        .eq('active', true)
-                        .order('name');
-                    
-                    if (serviceError) throw serviceError;
-                    this.services = serviceData || [];
-                    
-                    // Carregar agendamentos se usuário logado
-                    if (this.currentUser) {
-                        await this.loadAppointments();
-                    }
-                } catch (error) {
-                    console.error('Erro ao carregar dados:', error);
-                }
-            }
-            
-            async loadAppointments() {
-                try {
-                    let query = supabase.from('appointments').select(`
-                        *,
-                        client:users!appointments_client_id_fkey(name, phone),
-                        business:businesses!appointments_business_id_fkey(name),
-                        service:services!appointments_service_id_fkey(name)
-                    `);
-                    
-                    if (this.currentUser.user_type === 'business') {
-                        query = query.eq('business_id', this.currentUser.id);
-                    } else {
-                        query = query.eq('client_id', this.currentUser.id);
-                    }
-                    
-                    const { data, error } = await query.order('appointment_date', { ascending: false });
-                    
-                    if (error) throw error;
-                    this.appointments = data || [];
-                } catch (error) {
-                    console.error('Erro ao carregar agendamentos:', error);
-                }
-            }
-            
-            showLoading(element, text = 'Carregando...') {
-                if (element) {
-                    element.innerHTML = `<div class="loading"></div> ${text}`;
-                    element.disabled = true;
-                }
-                this.loading = true;
-            }
-            
-            hideLoading(element, originalText) {
-                if (element) {
-                    element.innerHTML = originalText;
-                    element.disabled = false;
-                }
-                this.loading = false;
-            }
-            
-            showMessage(message, type = 'info') {
-                const colors = {
-                    success: 'bg-green-100 text-green-800 border-green-200',
-                    error: 'bg-red-100 text-red-800 border-red-200',
-                    info: 'bg-blue-100 text-blue-800 border-blue-200',
-                    warning: 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                };
-                
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg border ${colors[type]} z-50 fade-in`;
-                messageDiv.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <span>${message}</span>
-                        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-lg">×</button>
-                    </div>
-                `;
-                document.body.appendChild(messageDiv);
-                
-                setTimeout(() => {
-                    if (messageDiv.parentElement) {
-                        messageDiv.remove();
-                    }
-                }, 5000);
-            }
-            
-            render() {
-                const root = document.getElementById('root');
-                
-                switch(this.currentView) {
-                    case 'login':
-                        root.innerHTML = this.renderLogin();
-                        break;
-                    case 'register':
-                        root.innerHTML = this.renderRegister();
-                        break;
-                    case 'forgot-password':
-                        root.innerHTML = this.renderForgotPassword();
-                        break;
-                    case 'reset-password':
-                        root.innerHTML = this.renderResetPassword();
-                        break;
-                    case 'email-sent':
-                        root.innerHTML = this.renderEmailSent();
-                        break;
-                    case 'business-dashboard':
-                        root.innerHTML = this.renderBusinessDashboard();
-                        break;
-                    case 'client-dashboard':
-                        root.innerHTML = this.renderClientDashboard();
-                        break;
-                    case 'business-details':
-                        root.innerHTML = this.renderBusinessDetails();
-                        break;
-                    case 'booking':
-                        root.innerHTML = this.renderBookingFlow();
-                        break;
-                    default:
-                        root.innerHTML = this.renderLogin();
-                }
-                
-                this.attachEvents();
-            }
-            
-            renderLogin() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
-                            <div class="text-center mb-8">
-                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Beauty App</h1>
-                                <p class="text-gray-600">Sistema de agendamento para salões de beleza</p>
-                            </div>
-
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                        placeholder="seu@email.com"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-                                    <div class="relative">
-                                        <input
-                                            id="password"
-                                            type="password"
-                                            required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent pr-12"
-                                            placeholder="Sua senha"
-                                        />
-                                        <button
-                                            id="toggle-password"
-                                            type="button"
-                                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                                        >
-                                            👁️
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <button
-                                    id="login-btn"
-                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
-                                >
-                                    Entrar
-                                </button>
-                            </div>
-
-                            <div class="mt-6 text-center">
-                                <button
-                                    id="forgot-password-btn"
-                                    class="text-pink-600 hover:text-pink-700 font-medium text-sm"
-                                >
-                                    Esqueceu sua senha?
-                                </button>
-                            </div>
-
-                            <div class="mt-6 text-center">
-                                <p class="text-gray-600 mb-4">Não tem uma conta?</p>
-                                <div class="space-y-3">
-                                    <button
-                                        id="register-client-btn"
-                                        class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-                                    >
-                                        👤 Cadastrar como Cliente
-                                    </button>
-                                    <button
-                                        id="register-business-btn"
-                                        class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300"
-                                    >
-                                        🏢 Cadastrar como Empresa
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderRegister() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
-                            <div class="text-center mb-8">
-                                <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                                    ${this.userType === 'business' ? 'Cadastro de Empresa' : 'Cadastro de Cliente'}
-                                </h1>
-                                <p class="text-gray-600">Preencha os dados abaixo</p>
-                            </div>
-
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        ${this.userType === 'business' ? 'Nome da Empresa' : 'Nome Completo'}
-                                    </label>
-                                    <input
-                                        id="reg-name"
-                                        type="text"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                    <input
-                                        id="reg-email"
-                                        type="email"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
-                                    <input
-                                        id="reg-phone"
-                                        type="tel"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                        placeholder="(48) 99999-9999"
-                                    />
-                                </div>
-
-                                ${this.userType === 'business' ? `
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
-                                    <input
-                                        id="reg-address"
-                                        type="text"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-                                ` : ''}
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-                                    <input
-                                        id="reg-password"
-                                        type="password"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                        minlength="6"
-                                    />
-                                    <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Senha</label>
-                                    <input
-                                        id="reg-confirm-password"
-                                        type="password"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <button
-                                    id="register-btn"
-                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
-                                >
-                                    Cadastrar
-                                </button>
-                            </div>
-
-                            <div class="mt-6 text-center">
-                                <button
-                                    id="back-to-login"
-                                    class="text-pink-600 hover:text-pink-700 font-medium"
-                                >
-                                    Voltar ao Login
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderForgotPassword() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
-                            <div class="text-center mb-8">
-                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Recuperar Senha</h1>
-                                <p class="text-gray-600">Digite seu email para receber as instruções</p>
-                            </div>
-
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                    <input
-                                        id="forgot-email"
-                                        type="email"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                        placeholder="seu@email.com"
-                                    />
-                                </div>
-
-                                <button
-                                    id="send-reset-btn"
-                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
-                                >
-                                    Enviar Instruções
-                                </button>
-                            </div>
-
-                            <div class="mt-6 text-center">
-                                <button
-                                    id="back-to-login-forgot"
-                                    class="text-pink-600 hover:text-pink-700 font-medium"
-                                >
-                                    Voltar ao Login
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderResetPassword() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
-                            <div class="text-center mb-8">
-                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Nova Senha</h1>
-                                <p class="text-gray-600">Digite sua nova senha</p>
-                            </div>
-
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nova Senha</label>
-                                    <input
-                                        id="new-password"
-                                        type="password"
-                                        required
-                                        minlength="6"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nova Senha</label>
-                                    <input
-                                        id="confirm-new-password"
-                                        type="password"
-                                        required
-                                        minlength="6"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <button
-                                    id="update-password-btn"
-                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
-                                >
-                                    Atualizar Senha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderEmailSent() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in text-center">
-                            <div class="text-6xl mb-4">📧</div>
-                            <h1 class="text-3xl font-bold text-gray-800 mb-2">Email Enviado!</h1>
-                            <p class="text-gray-600 mb-6">
-                                Verifique sua caixa de entrada${this.pendingVerificationEmail ? ` (${this.pendingVerificationEmail})` : ''} 
-                                e clique no link para ${this.currentView.includes('reset') ? 'redefinir sua senha' : 'verificar sua conta'}.
-                            </p>
-                            <p class="text-sm text-gray-500 mb-6">
-                                Não encontrou o email? Verifique a pasta de spam.
-                            </p>
-                            <button
-                                id="back-to-login-email"
-                                class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition duration-300"
-                            >
-                                Voltar ao Login
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderBusinessDashboard() {
-                if (!this.currentUser) return '';
-                
-                const userServices = this.services.filter(s => s.business_id === this.currentUser.id);
-                const userAppointments = this.appointments;
-                const todayAppointments = userAppointments.filter(a => a.appointment_date === this.currentDate);
-                
-                return `
-                    <div class="min-h-screen bg-gray-50">
-                        <header class="bg-white shadow-sm border-b">
-                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                                <div class="flex justify-between items-center py-4">
-                                    <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser.name}</h1>
-                                    <button
-                                        id="logout-btn"
-                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-                                    >
-                                        Sair
-                                    </button>
-                                </div>
-                            </div>
-                        </header>
-
-                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                            <!-- Stats -->
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                                <div class="bg-white p-6 rounded-lg shadow">
-                                    <div class="flex items-center">
-                                        <div class="text-3xl mr-4">📅</div>
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-500">Hoje</p>
-                                            <p class="text-2xl font-semibold text-gray-900">${todayAppointments.length}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white p-6 rounded-lg shadow">
-                                    <div class="flex items-center">
-                                        <div class="text-3xl mr-4">📋</div>
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-500">Total</p>
-                                            <p class="text-2xl font-semibold text-gray-900">${userAppointments.length}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white p-6 rounded-lg shadow">
-                                    <div class="flex items-center">
-                                        <div class="text-3xl mr-4">⚙️</div>
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-500">Serviços</p>
-                                            <p class="text-2xl font-semibold text-gray-900">${userServices.length}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white p-6 rounded-lg shadow">
-                                    <div class="flex items-center">
-                                        <div class="text-3xl mr-4">💰</div>
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-500">Faturamento</p>
-                                            <p class="text-2xl font-semibold text-gray-900">R$ ${userAppointments.reduce((total, apt) => total + (parseFloat(apt.price) || 0), 0).toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <!-- Gerenciar Serviços -->
-                                <div class="bg-white rounded-lg shadow p-6">
-                                    <div class="flex justify-between items-center mb-6">
-                                        <h2 class="text-xl font-semibold text-gray-900">Gerenciar Serviços</h2>
-                                        <button id="add-service-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
-                                            ➕ Novo Serviço
-                                        </button>
-                                    </div>
-                                    
-                                    <!-- Formulário para adicionar/editar serviço -->
-                                    <div id="service-form" class="mb-6 space-y-4 ${this.editingService || this.showServiceForm ? '' : 'hidden'}">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Serviço</label>
-                                                <input
-                                                    id="service-name"
-                                                    type="text"
-                                                    required
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                    placeholder="Ex: Corte feminino"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
-                                                <input
-                                                    id="service-price"
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    required
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                    placeholder="0.00"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
-                                                <input
-                                                    id="service-duration"
-                                                    type="number"
-                                                    min="15"
-                                                    step="15"
-                                                    required
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                    placeholder="60"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                                                <select
-                                                    id="service-category"
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                >
-                                                    <option value="cabelo">Cabelo</option>
-                                                    <option value="unhas">Unhas</option>
-                                                    <option value="estetica">Estética</option>
-                                                    <option value="depilacao">Depilação</option>
-                                                    <option value="massagem">Massagem</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                                            <textarea
-                                                id="service-description"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                rows="2"
-                                                placeholder="Descrição detalhada do serviço"
-                                            ></textarea>
-                                        </div>
-                                        <div class="flex gap-2">
-                                            <button
-                                                id="save-service-btn"
-                                                class="flex-1 bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition duration-300"
-                                            >
-                                                ${this.editingService ? 'Atualizar' : 'Salvar'} Serviço
-                                            </button>
-                                            <button
-                                                id="cancel-service-btn"
-                                                class="px-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300"
-                                            >
-                                                Cancelar
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Lista de serviços -->
-                                    <div class="space-y-3">
-                                        ${userServices.length === 0 ? 
-                                            '<p class="text-gray-500 text-center py-8">Nenhum serviço cadastrado ainda.<br>Clique em "Novo Serviço" para começar.</p>' 
-                                            : 
-                                            userServices.map(service => `
-                                                <div class="border border-gray-200 rounded-lg p-4">
-                                                    <div class="flex justify-between items-start">
-                                                        <div class="flex-1">
-                                                            <div class="flex items-center gap-2">
-                                                                <h3 class="font-semibold text-gray-900">${service.name}</h3>
-                                                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${service.category || 'cabelo'}</span>
-                                                            </div>
-                                                            <p class="text-sm text-gray-600 mt-1">${service.description || ''}</p>
-                                                            <div class="flex items-center mt-2 text-sm text-gray-500">
-                                                                <span class="font-semibold text-green-600">R$ ${parseFloat(service.price).toFixed(2)}</span>
-                                                                <span class="mx-2">•</span>
-                                                                <span>⏱️ ${service.duration} min</span>
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex space-x-2">
-                                                            <button
-                                                                onclick="app.editService('${service.id}')"
-                                                                class="text-blue-600 hover:text-blue-800 p-1"
-                                                                title="Editar"
-                                                            >
-                                                                ✏️
-                                                            </button>
-                                                            <button
-                                                                onclick="app.deleteService('${service.id}')"
-                                                                class="text-red-600 hover:text-red-800 p-1"
-                                                                title="Excluir"
-                                                            >
-                                                                🗑️
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            `).join('')
-                                        }
-                                    </div>
-                                </div>
-
-                                <!-- Agenda de Agendamentos -->
-                                <div class="bg-white rounded-lg shadow p-6">
-                                    <div class="flex justify-between items-center mb-6">
-                                        <h2 class="text-xl font-semibold text-gray-900">Agenda</h2>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                id="date-filter"
-                                                type="date"
-                                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                value="${this.currentDate}"
-                                            />
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="space-y-4">
-                                        ${this.renderAppointmentList(userAppointments)}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderAppointmentList(appointments) {
-                if (appointments.length === 0) {
-                    return '<p class="text-gray-500 text-center py-8">Nenhum agendamento encontrado</p>';
-                }
-                
-                const sortedAppointments = appointments.sort((a, b) => {
-                    const dateA = new Date(a.appointment_date + ' ' + a.appointment_time);
-                    const dateB = new Date(b.appointment_date + ' ' + b.appointment_time);
-                    return dateA - dateB;
-                });
-                
-                return sortedAppointments.map(appointment => {
-                    const isToday = appointment.appointment_date === this.currentDate;
-                    const isPast = new Date(appointment.appointment_date + ' ' + appointment.appointment_time) < new Date();
-                    
-                    return `
-                        <div class="border border-gray-200 rounded-lg p-4 ${isToday ? 'bg-blue-50 border-blue-200' : isPast ? 'bg-gray-50' : ''}">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2">
-                                        <h3 class="font-semibold text-gray-900">${appointment.client?.name || 'Cliente'}</h3>
-                                        ${isToday ? '<span class="text-xs bg-blue-500 text-white px-2 py-1 rounded">HOJE</span>' : ''}
-                                        ${isPast ? '<span class="text-xs bg-gray-500 text-white px-2 py-1 rounded">FINALIZADO</span>' : ''}
-                                    </div>
-                                    <p class="text-sm text-gray-600">${appointment.service?.name || 'Serviço'}</p>
-                                    <div class="flex items-center mt-2 text-sm text-gray-500">
-                                        <span>📅 ${this.formatDate(appointment.appointment_date)}</span>
-                                        <span class="mx-2">•</span>
-                                        <span>⏰ ${appointment.appointment_time}</span>
-                                        <span class="mx-2">•</span>
-                                        <span>📞 ${appointment.client?.phone || 'N/A'}</span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-lg font-semibold text-green-600">
-                                        R$ ${parseFloat(appointment.price).toFixed(2)}
-                                    </span>
-                                    <div class="mt-1">
-                                        <span class="inline-flex px-2 py-1 text-xs font-semibold ${
-                                            appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                            appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-red-100 text-red-800'
-                                        } rounded-full">
-                                            ${appointment.status === 'confirmed' ? 'Confirmado' : 
-                                              appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-            
-            renderClientDashboard() {
-                if (!this.currentUser) return '';
-                
-                const userAppointments = this.appointments;
-                
-                return `
-                    <div class="min-h-screen bg-gray-50">
-                        <header class="bg-white shadow-sm border-b">
-                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                                <div class="flex justify-between items-center py-4">
-                                    <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser.name}!</h1>
-                                    <button
-                                        id="logout-btn"
-                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-                                    >
-                                        Sair
-                                    </button>
-                                </div>
-                            </div>
-                        </header>
-
-                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                <!-- Estabelecimentos -->
-                                <div class="lg:col-span-2">
-                                    <div class="flex justify-between items-center mb-6">
-                                        <h2 class="text-xl font-semibold text-gray-900">Estabelecimentos</h2>
-                                        <div class="flex items-center gap-4">
-                                            <input
-                                                id="search-businesses"
-                                                type="text"
-                                                placeholder="Buscar salões..."
-                                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        ${this.businesses.length === 0 ? 
-                                            '<div class="col-span-2 text-center py-12"><p class="text-gray-500">Nenhuma empresa cadastrada ainda</p></div>' 
-                                            :
-                                            this.businesses.map(business => `
-                                                <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer" onclick="app.selectBusiness('${business.id}')">
-                                                    <img
-                                                        src="${business.image_url || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'}"
-                                                        alt="${business.name}"
-                                                        class="w-full h-48 object-cover rounded-t-lg"
-                                                        onerror="this.src='https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'"
-                                                    />
-                                                    <div class="p-4">
-                                                        <h3 class="font-semibold text-gray-900">${business.name}</h3>
-                                                        <div class="flex items-center mt-2">
-                                                            <span class="text-sm text-gray-600">📍 ${business.address || 'Endereço não informado'}</span>
-                                                        </div>
-                                                        <div class="flex items-center mt-1">
-                                                            <span class="text-sm text-gray-600">📞 ${business.phone || 'Telefone não informado'}</span>
-                                                        </div>
-                                                        <div class="flex items-center justify-between mt-3">
-                                                            <div class="flex items-center">
-                                                                <span class="text-sm text-gray-600">⭐ ${business.rating || '5.0'}</span>
-                                                                <span class="text-sm text-gray-500 ml-2">(${this.services.filter(s => s.business_id === business.id).length} serviços)</span>
-                                                            </div>
-                                                            <span class="text-pink-600 text-sm font-medium hover:text-pink-700">Ver serviços →</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            `).join('')
-                                        }
-                                    </div>
-                                </div>
-
-                                <!-- Meus Agendamentos -->
-                                <div>
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Meus Agendamentos</h2>
-                                    
-                                    <div class="space-y-4">
-                                        ${userAppointments.length === 0 ? 
-                                            '<p class="text-gray-500 text-center py-8">Nenhum agendamento realizado</p>' 
-                                            :
-                                            userAppointments.map(appointment => {
-                                                return `
-                                                    <div class="bg-white rounded-lg shadow p-4">
-                                                        <h3 class="font-semibold text-gray-900">${appointment.service?.name || 'Serviço'}</h3>
-                                                        <p class="text-sm text-gray-600">${appointment.business?.name || 'Estabelecimento'}</p>
-                                                        <div class="flex items-center mt-2 text-sm text-gray-500">
-                                                            <span>📅 ${this.formatDate(appointment.appointment_date)}</span>
-                                                        </div>
-                                                        <div class="flex items-center mt-1 text-sm text-gray-500">
-                                                            <span>⏰ ${appointment.appointment_time}</span>
-                                                        </div>
-                                                        <div class="flex items-center justify-between mt-3">
-                                                            <span class="text-green-600 font-semibold">R$ ${parseFloat(appointment.price).toFixed(2)}</span>
-                                                            <span class="inline-flex px-2 py-1 text-xs font-semibold ${
-                                                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                                appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                'bg-red-100 text-red-800'
-                                                            } rounded-full">
-                                                                ${appointment.status === 'confirmed' ? 'Confirmado' : 
-                                                                  appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                `;
-                                            }).join('')
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderBusinessDetails() {
-                if (!this.selectedBusiness) {
-                    this.currentView = 'client-dashboard';
-                    this.render();
-                    return;
-                }
-                
-                const businessServices = this.services.filter(s => s.business_id === this.selectedBusiness.id);
-                
-                return `
-                    <div class="min-h-screen bg-gray-50">
-                        <header class="bg-white shadow-sm border-b">
-                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                                <div class="flex justify-between items-center py-4">
-                                    <div class="flex items-center gap-4">
-                                        <button
-                                            id="back-to-businesses"
-                                            class="text-gray-600 hover:text-gray-800"
-                                        >
-                                            ← Voltar
-                                        </button>
-                                        <h1 class="text-2xl font-bold text-gray-900">${this.selectedBusiness.name}</h1>
-                                    </div>
-                                    <button
-                                        id="logout-btn"
-                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-                                    >
-                                        Sair
-                                    </button>
-                                </div>
-                            </div>
-                        </header>
-
-                        <div class="max-w-4xl mx-auto px-4 py-8">
-                            <!-- Info do estabelecimento -->
-                            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                                <div class="flex items-start space-x-4">
-                                    <img
-                                        src="${this.selectedBusiness.image_url || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'}"
-                                        alt="${this.selectedBusiness.name}"
-                                        class="w-20 h-20 rounded-lg object-cover"
-                                        onerror="this.src='https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'"
-                                    />
-                                    <div class="flex-1">
-                                        <h2 class="text-xl font-semibold text-gray-900">${this.selectedBusiness.name}</h2>
-                                        <div class="flex items-center mt-2">
-                                            <span class="text-gray-600">📍 ${this.selectedBusiness.address || 'Endereço não informado'}</span>
-                                        </div>
-                                        <div class="flex items-center mt-1">
-                                            <span class="text-gray-600">📞 ${this.selectedBusiness.phone || 'Telefone não informado'}</span>
-                                        </div>
-                                        <div class="flex items-center mt-1">
-                                            <span class="text-gray-600">⭐ ${this.selectedBusiness.rating || '5.0'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Serviços disponíveis -->
-                            <div class="bg-white rounded-lg shadow p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Serviços Disponíveis</h3>
-                                
-                                ${businessServices.length === 0 ? 
-                                    '<p class="text-gray-500 text-center py-8">Este estabelecimento ainda não cadastrou serviços</p>' 
-                                    :
-                                    `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        ${businessServices.map(service => `
-                                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                                <div class="flex items-center gap-2 mb-2">
-                                                    <h4 class="font-semibold text-gray-900">${service.name}</h4>
-                                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${service.category || 'cabelo'}</span>
-                                                </div>
-                                                <p class="text-sm text-gray-600 mb-3">${service.description || ''}</p>
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex items-center text-sm text-gray-500">
-                                                        <span class="font-semibold text-green-600">R$ ${parseFloat(service.price).toFixed(2)}</span>
-                                                        <span class="mx-2">•</span>
-                                                        <span>⏱️ ${service.duration} min</span>
-                                                    </div>
-                                                    <button
-                                                        onclick="app.selectService('${service.id}')"
-                                                        class="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition duration-300 text-sm"
-                                                    >
-                                                        Agendar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                    </div>`
-                                }
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            renderBookingFlow() {
-                if (!this.selectedService) {
-                    this.currentView = 'client-dashboard';
-                    this.render();
-                    return;
-                }
-                
-                const service = this.services.find(s => s.id === this.selectedService);
-                const business = this.businesses.find(b => b.id === service.business_id);
-                
-                return `
-                    <div class="min-h-screen bg-gray-50">
-                        <header class="bg-white shadow-sm border-b">
-                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                                <div class="flex justify-between items-center py-4">
-                                    <div class="flex items-center gap-4">
-                                        <button
-                                            id="back-to-business"
-                                            class="text-gray-600 hover:text-gray-800"
-                                        >
-                                            ← Voltar
-                                        </button>
-                                        <h1 class="text-2xl font-bold text-gray-900">Agendar Serviço</h1>
-                                    </div>
-                                    <button
-                                        id="logout-btn"
-                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-                                    >
-                                        Sair
-                                    </button>
-                                </div>
-                            </div>
-                        </header>
-
-                        <div class="max-w-2xl mx-auto px-4 py-8">
-                            <div class="bg-white rounded-lg shadow p-6">
-                                <h2 class="text-xl font-semibold text-gray-900 mb-6">Confirmar Agendamento</h2>
-                                
-                                <!-- Resumo do serviço -->
-                                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                                    <h3 class="font-semibold text-gray-900">${service.name}</h3>
-                                    <p class="text-gray-600">${service.description || ''}</p>
-                                    <p class="text-sm text-gray-500 mt-1">${business.name}</p>
-                                    <div class="flex items-center mt-2 text-sm text-gray-500">
-                                        <span class="font-semibold text-green-600">R$ ${parseFloat(service.price).toFixed(2)}</span>
-                                        <span class="mx-2">•</span>
-                                        <span>⏱️ ${service.duration} min</span>
-                                    </div>
-                                </div>
-
-                                <!-- Formulário de agendamento -->
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
-                                        <input
-                                            id="booking-date"
-                                            type="date"
-                                            required
-                                            min="${new Date().toISOString().split('T')[0]}"
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Horário</label>
-                                        <select
-                                            id="booking-time"
-                                            required
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                        >
-                                            <option value="">Selecione um horário</option>
-                                            <option value="08:00">08:00</option>
-                                            <option value="08:30">08:30</option>
-                                            <option value="09:00">09:00</option>
-                                            <option value="09:30">09:30</option>
-                                            <option value="10:00">10:00</option>
-                                            <option value="10:30">10:30</option>
-                                            <option value="11:00">11:00</option>
-                                            <option value="11:30">11:30</option>
-                                            <option value="14:00">14:00</option>
-                                            <option value="14:30">14:30</option>
-                                            <option value="15:00">15:00</option>
-                                            <option value="15:30">15:30</option>
-                                            <option value="16:00">16:00</option>
-                                            <option value="16:30">16:30</option>
-                                            <option value="17:00">17:00</option>
-                                            <option value="17:30">17:30</option>
-                                            <option value="18:00">18:00</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Observações (opcional)</label>
-                                        <textarea
-                                            id="booking-notes"
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                            rows="3"
-                                            placeholder="Alguma observação especial?"
-                                        ></textarea>
-                                    </div>
-
-                                    <button
-                                        id="confirm-booking-btn"
-                                        class="w-full bg-pink-500 text-white py-3 rounded-lg hover:bg-pink-600 transition duration-300 font-semibold"
-                                    >
-                                        Confirmar Agendamento
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Funções utilitárias
-            formatDate(dateString) {
-                const date = new Date(dateString + 'T00:00:00');
-                return date.toLocaleDateString('pt-BR');
-            }
-            
-            // Event handlers
-            attachEvents() {
-                // Login events
-                const loginBtn = document.getElementById('login-btn');
-                if (loginBtn) {
-                    loginBtn.addEventListener('click', () => this.handleLogin());
-                }
-                
-                const togglePassword = document.getElementById('toggle-password');
-                if (togglePassword) {
-                    togglePassword.addEventListener('click', () => this.togglePassword());
-                }
-                
-                const forgotPasswordBtn = document.getElementById('forgot-password-btn');
-                if (forgotPasswordBtn) {
-                    forgotPasswordBtn.addEventListener('click', () => {
-                        this.currentView = 'forgot-password';
-                        this.render();
-                    });
-                }
-                
-                const registerClientBtn = document.getElementById('register-client-btn');
-                if (registerClientBtn) {
-                    registerClientBtn.addEventListener('click', () => {
-                        this.userType = 'client';
-                        this.currentView = 'register';
-                        this.render();
-                    });
-                }
-                
-                const registerBusinessBtn = document.getElementById('register-business-btn');
-                if (registerBusinessBtn) {
-                    registerBusinessBtn.addEventListener('click', () => {
-                        this.userType = 'business';
-                        this.currentView = 'register';
-                        this.render();
-                    });
-                }
-                
-                // Register events
-                const registerBtn = document.getElementById('register-btn');
-                if (registerBtn) {
-                    registerBtn.addEventListener('click', () => this.handleRegister());
-                }
-                
-                // Navigation events
-                const backToLogin = document.getElementById('back-to-login');
-                if (backToLogin) {
-                    backToLogin.addEventListener('click', () => {
-                        this.currentView = 'login';
-                        this.render();
-                    });
-                }
-                
-                const backToLoginForgot = document.getElementById('back-to-login-forgot');
-                if (backToLoginForgot) {
-                    backToLoginForgot.addEventListener('click', () => {
-                        this.currentView = 'login';
-                        this.render();
-                    });
-                }
-                
-                const backToLoginEmail = document.getElementById('back-to-login-email');
-                if (backToLoginEmail) {
-                    backToLoginEmail.addEventListener('click', () => {
-                        this.currentView = 'login';
-                        this.render();
-                    });
-                }
-                
-                // Forgot password events
-                const sendResetBtn = document.getElementById('send-reset-btn');
-                if (sendResetBtn) {
-                    sendResetBtn.addEventListener('click', () => this.handleForgotPassword());
-                }
-                
-                // Reset password events
-                const updatePasswordBtn = document.getElementById('update-password-btn');
-                if (updatePasswordBtn) {
-                    updatePasswordBtn.addEventListener('click', () => this.handleResetPassword());
-                }
-                
-                // Logout events
-                const logoutBtn = document.getElementById('logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', () => this.handleLogout());
-                }
-                
-                // Business dashboard events
-                const addServiceBtn = document.getElementById('add-service-btn');
-                if (addServiceBtn) {
-                    addServiceBtn.addEventListener('click', () => this.showServiceForm());
-                }
-                
-                const saveServiceBtn = document.getElementById('save-service-btn');
-                if (saveServiceBtn) {
-                    saveServiceBtn.addEventListener('click', () => this.handleSaveService());
-                }
-                
-                const cancelServiceBtn = document.getElementById('cancel-service-btn');
-                if (cancelServiceBtn) {
-                    cancelServiceBtn.addEventListener('click', () => this.cancelServiceForm());
-                }
-                
-                const dateFilter = document.getElementById('date-filter');
-                if (dateFilter) {
-                    dateFilter.addEventListener('change', (e) => {
-                        this.currentDate = e.target.value;
-                        this.render();
-                    });
-                }
-                
-                // Client dashboard events
-                const backToBusinesses = document.getElementById('back-to-businesses');
-                if (backToBusinesses) {
-                    backToBusinesses.addEventListener('click', () => {
-                        this.selectedBusiness = null;
-                        this.currentView = 'client-dashboard';
-                        this.render();
-                    });
-                }
-                
-                const backToBusiness = document.getElementById('back-to-business');
-                if (backToBusiness) {
-                    backToBusiness.addEventListener('click', () => {
-                        this.selectedService = null;
-                        this.currentView = 'business-details';
-                        this.render();
-                    });
-                }
-                
-                // Booking events
-                const confirmBookingBtn = document.getElementById('confirm-booking-btn');
-                if (confirmBookingBtn) {
-                    confirmBookingBtn.addEventListener('click', () => this.handleBooking());
-                }
-                
-                // Enter key support
-                document.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && !this.loading) {
-                        if (this.currentView === 'login') {
-                            this.handleLogin();
-                        } else if (this.currentView === 'register') {
-                            this.handleRegister();
-                        } else if (this.currentView === 'forgot-password') {
-                            this.handleForgotPassword();
-                        } else if (this.currentView === 'reset-password') {
-                            this.handleResetPassword();
-                        }
-                    }
-                });
-            }
-            
-            // Authentication methods
-            async handleLogin() {
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const loginBtn = document.getElementById('login-btn');
-                
-                if (!email || !password) {
-                    this.showMessage('Por favor, preencha email e senha', 'error');
-                    return;
-                }
-                
-                this.showLoading(loginBtn, 'Entrando...');
-                
-                try {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (error) throw error;
-                    
-                    // O usuário será carregado automaticamente pelo onAuthStateChange
-                    this.showMessage('Login realizado com sucesso!', 'success');
-                } catch (error) {
-                    console.error('Erro no login:', error);
-                    this.showMessage(error.message, 'error');
-                } finally {
-                    this.hideLoading(loginBtn, 'Entrar');
-                }
-            }
-            
-            async handleRegister() {
-                const name = document.getElementById('reg-name').value.trim();
-                const email = document.getElementById('reg-email').value.trim();
-                const phone = document.getElementById('reg-phone').value.trim();
-                const password = document.getElementById('reg-password').value;
-                const confirmPassword = document.getElementById('reg-confirm-password').value;
-                const address = document.getElementById('reg-address')?.value.trim() || '';
-                const registerBtn = document.getElementById('register-btn');
-                
-                if (!name || !email || !phone || !password || !confirmPassword) {
-                    this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
-                    return;
-                }
-                
-                if (password.length < 6) {
-                    this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    this.showMessage('As senhas não coincidem!', 'error');
-                    return;
-                }
-                
-                this.showLoading(registerBtn, 'Cadastrando...');
-                
-                try {
-                    // Registrar no Supabase Auth
-                    const { data, error } = await supabase.auth.signUp({
-                        email: email,
-                        password: password,
-                        options: {
-                            data: {
-                                name: name,
-                                user_type: this.userType,
-                                phone: phone,
-                                address: address
-                            }
-                        }
-                    });
-                    
-                    if (error) throw error;
-                    
-                    // Inserir dados extras na tabela users
-                    const { error: dbError } = await supabase
-                        .from('users')
-                        .insert([{
-                            id: data.user.id,
-                            email: email,
-                            user_type: this.userType,
-                            name: name,
-                            phone: phone,
-                            address: address,
-                            email_verified: false
-                        }]);
-                    
-                    if (dbError) throw dbError;
-                    
-                    // Se for empresa, criar registro na tabela businesses
-                    if (this.userType === 'business') {
-                        const { error: businessError } = await supabase
-                            .from('businesses')
-                            .insert([{
-                                user_id: data.user.id,
-                                name: name,
-                                email: email,
-                                phone: phone,
-                                address: address,
-                                rating: 5.0,
-                                image_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'
-                            }]);
-                        
-                        if (businessError) throw businessError;
-                    }
-                    
-                    this.pendingVerificationEmail = email;
-                    this.currentView = 'email-sent';
-                    this.render();
-                    this.showMessage('Cadastro realizado! Verifique seu email para ativar a conta.', 'success');
-                } catch (error) {
-                    console.error('Erro no cadastro:', error);
-                    this.showMessage(error.message, 'error');
-                } finally {
-                    this.hideLoading(registerBtn, 'Cadastrar');
-                }
-            }
-            
-            async handleForgotPassword() {
-                const email = document.getElementById('forgot-email').value.trim();
-                const sendResetBtn = document.getElementById('send-reset-btn');
-                
-                if (!email) {
-                    this.showMessage('Por favor, digite seu email', 'error');
-                    return;
-                }
-                
-                this.showLoading(sendResetBtn, 'Enviando...');
-                
-                try {
-                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                        redirectTo: window.location.origin + '/reset-password'
-                    });
-                    
-                    if (error) throw error;
-                    
-                    this.pendingVerificationEmail = email;
-                    this.currentView = 'email-sent';
-                    this.render();
-                    this.showMessage('Email de recuperação enviado!', 'success');
-                } catch (error) {
-                    console.error('Erro ao enviar email:', error);
-                    this.showMessage(error.message, 'error');
-                } finally {
-                    this.hideLoading(sendResetBtn, 'Enviar Instruções');
-                }
-            }
-            
-            async handleResetPassword() {
-                const newPassword = document.getElementById('new-password').value;
-                const confirmNewPassword = document.getElementById('confirm-new-password').value;
-                const updatePasswordBtn = document.getElementById('update-password-btn');
-                
-                if (!newPassword || !confirmNewPassword) {
-                    this.showMessage('Por favor, preencha todos os campos', 'error');
-                    return;
-                }
-                
-                if (newPassword.length < 6) {
-                    this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
-                    return;
-                }
-                
-                if (newPassword !== confirmNewPassword) {
-                    this.showMessage('As senhas não coincidem!', 'error');
-                    return;
-                }
-                
-                this.showLoading(updatePasswordBtn, 'Atualizando...');
-                
-                try {
-                    const { error } = await supabase.auth.updateUser({
-                        password: newPassword
-                    });
-                    
-                    if (error) throw error;
-                    
-                    this.showMessage('Senha atualizada com sucesso!', 'success');
+        
+        function initApp() {
+            class BeautyApp {
+                constructor() {
                     this.currentView = 'login';
-                    this.render();
-                } catch (error) {
-                    console.error('Erro ao atualizar senha:', error);
-                    this.showMessage(error.message, 'error');
-                } finally {
-                    this.hideLoading(updatePasswordBtn, 'Atualizar Senha');
-                }
-            }
-            
-            async handleLogout() {
-                try {
-                    const { error } = await supabase.auth.signOut();
-                    if (error) throw error;
-                    
                     this.currentUser = null;
+                    this.userType = '';
+                    this.showPassword = false;
                     this.selectedBusiness = null;
                     this.selectedService = null;
                     this.editingService = null;
-                    this.currentView = 'login';
-                    this.render();
-                } catch (error) {
-                    console.error('Erro no logout:', error);
-                    this.showMessage(error.message, 'error');
-                }
-            }
-            
-            // Business methods
-            showServiceForm() {
-                this.showServiceForm = true;
-                const form = document.getElementById('service-form');
-                if (form) {
-                    form.classList.remove('hidden');
-                }
-            }
-            
-            cancelServiceForm() {
-                this.showServiceForm = false;
-                this.editingService = null;
-                const form = document.getElementById('service-form');
-                if (form) {
-                    form.classList.add('hidden');
-                    // Clear form
-                    document.getElementById('service-name').value = '';
-                    document.getElementById('service-price').value = '';
-                    document.getElementById('service-duration').value = '';
-                    document.getElementById('service-description').value = '';
-                }
-            }
-            
-            async editService(serviceId) {
-                const service = this.services.find(s => s.id === serviceId);
-                if (service) {
-                    this.editingService = service;
-                    this.showServiceForm = true;
+                    this.currentDate = new Date().toISOString().split('T')[0];
+                    this.loading = false;
+                    this.pendingVerificationEmail = null;
                     
-                    // Fill form with service data
-                    document.getElementById('service-name').value = service.name;
-                    document.getElementById('service-price').value = service.price;
-                    document.getElementById('service-duration').value = service.duration;
-                    document.getElementById('service-category').value = service.category || 'cabelo';
-                    document.getElementById('service-description').value = service.description || '';
+                    // Cache de dados
+                    this.businesses = [];
+                    this.services = [];
+                    this.appointments = [];
                     
-                    const form = document.getElementById('service-form');
-                    if (form) {
-                        form.classList.remove('hidden');
-                    }
+                    this.init();
                 }
-            }
-            
-            async deleteService(serviceId) {
-                if (confirm('Tem certeza que deseja excluir este serviço?')) {
+                
+                async init() {
+                    console.log('🚀 Inicializando Beauty App...');
+                    
                     try {
-                        const { error } = await supabase
-                            .from('services')
-                            .delete()
-                            .eq('id', serviceId);
+                        // Verificar se usuário já está logado
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
+                            await this.loadUserData(session.user);
+                            this.currentView = this.currentUser.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                        }
                         
-                        if (error) throw error;
+                        // Escutar mudanças de autenticação
+                        supabase.auth.onAuthStateChange(async (event, session) => {
+                            console.log('🔄 Auth state changed:', event);
+                            if (event === 'SIGNED_IN') {
+                                await this.loadUserData(session.user);
+                                this.currentView = this.currentUser.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                                this.render();
+                            } else if (event === 'SIGNED_OUT') {
+                                this.currentUser = null;
+                                this.currentView = 'login';
+                                this.render();
+                            }
+                        });
                         
-                        // Atualizar cache local
-                        this.services = this.services.filter(s => s.id !== serviceId);
+                        await this.loadData();
                         this.render();
-                        this.showMessage('Serviço excluído com sucesso!', 'success');
+                        
                     } catch (error) {
-                        console.error('Erro ao excluir serviço:', error);
-                        this.showMessage(error.message, 'error');
+                        console.error('❌ Erro na inicialização:', error);
+                        this.showMessage('Erro ao inicializar aplicação: ' + error.message, 'error');
                     }
                 }
-            }
-            
-            async handleSaveService() {
-                const name = document.getElementById('service-name').value.trim();
-                const price = parseFloat(document.getElementById('service-price').value);
-                const duration = parseInt(document.getElementById('service-duration').value);
-                const category = document.getElementById('service-category').value;
-                const description = document.getElementById('service-description').value.trim();
-                const saveBtn = document.getElementById('save-service-btn');
                 
-                if (!name || !price || !duration) {
-                    this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
-                    return;
-                }
-                
-                if (price <= 0) {
-                    this.showMessage('O preço deve ser maior que zero', 'error');
-                    return;
-                }
-                
-                if (duration < 15) {
-                    this.showMessage('A duração deve ser de pelo menos 15 minutos', 'error');
-                    return;
-                }
-                
-                // Obter business_id do usuário logado
-                const { data: businessData } = await supabase
-                    .from('businesses')
-                    .select('id')
-                    .eq('user_id', this.currentUser.id)
-                    .single();
-                
-                if (!businessData) {
-                    this.showMessage('Erro: Estabelecimento não encontrado', 'error');
-                    return;
-                }
-                
-                this.showLoading(saveBtn, this.editingService ? 'Atualizando...' : 'Salvando...');
-                
-                try {
-                    if (this.editingService) {
-                        // Update existing service
-                        const { error } = await supabase
-                            .from('services')
-                            .update({
-                                name,
-                                price,
-                                duration,
-                                category,
-                                description
-                            })
-                            .eq('id', this.editingService.id);
-                        
-                        if (error) throw error;
-                        
-                        // Atualizar cache local
-                        const index = this.services.findIndex(s => s.id === this.editingService.id);
-                        this.services[index] = {
-                            ...this.editingService,
-                            name,
-                            price,
-                            duration,
-                            category,
-                            description
-                        };
-                        
-                        this.showMessage('Serviço atualizado com sucesso!', 'success');
-                    } else {
-                        // Create new service
+                async loadUserData(authUser) {
+                    try {
                         const { data, error } = await supabase
-                            .from('services')
+                            .from('users')
+                            .select('*')
+                            .eq('id', authUser.id)
+                            .single();
+                        
+                        if (error) {
+                            console.error('Erro ao carregar usuário:', error);
+                            // Se o usuário não existe na tabela users, criar
+                            if (error.code === 'PGRST116') {
+                                await this.createUserRecord(authUser);
+                                return;
+                            }
+                            throw error;
+                        }
+                        this.currentUser = data;
+                        console.log('👤 Usuário carregado:', data);
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar dados do usuário:', error);
+                    }
+                }
+                
+                async createUserRecord(authUser) {
+                    try {
+                        const userData = authUser.user_metadata || {};
+                        const { data, error } = await supabase
+                            .from('users')
                             .insert([{
-                                business_id: businessData.id,
-                                name,
-                                price,
-                                duration,
-                                category,
-                                description,
-                                active: true
+                                id: authUser.id,
+                                email: authUser.email,
+                                user_type: userData.user_type || 'client',
+                                name: userData.name || '',
+                                phone: userData.phone || '',
+                                address: userData.address || '',
+                                email_verified: authUser.email_confirmed_at ? true : false
                             }])
                             .select()
                             .single();
                         
                         if (error) throw error;
-                        
-                        // Adicionar ao cache local
-                        this.services.push(data);
-                        
-                        this.showMessage('Serviço criado com sucesso!', 'success');
+                        this.currentUser = data;
+                        console.log('👤 Usuário criado:', data);
+                    } catch (error) {
+                        console.error('❌ Erro ao criar registro do usuário:', error);
                     }
-                    
-                    this.cancelServiceForm();
-                    this.render();
-                } catch (error) {
-                    console.error('Erro ao salvar serviço:', error);
-                    this.showMessage(error.message, 'error');
-                } finally {
-                    this.hideLoading(saveBtn, this.editingService ? 'Atualizar Serviço' : 'Salvar Serviço');
-                }
-            }
-            
-            // Client methods
-            selectBusiness(businessId) {
-                this.selectedBusiness = this.businesses.find(b => b.id === businessId);
-                this.currentView = 'business-details';
-                this.render();
-            }
-            
-            selectService(serviceId) {
-                this.selectedService = serviceId;
-                this.currentView = 'booking';
-                this.render();
-            }
-            
-            async handleBooking() {
-                const date = document.getElementById('booking-date').value;
-                const time = document.getElementById('booking-time').value;
-                const notes = document.getElementById('booking-notes').value.trim();
-                const confirmBtn = document.getElementById('confirm-booking-btn');
-                
-                if (!date || !time) {
-                    this.showMessage('Por favor, selecione data e horário', 'error');
-                    return;
                 }
                 
-                const service = this.services.find(s => s.id === this.selectedService);
-                const business = this.businesses.find(b => b.id === service.business_id);
-                
-                this.showLoading(confirmBtn, 'Agendando...');
-                
-                try {
-                    // Check if time slot is available
-                    const { data: existingBooking } = await supabase
-                        .from('appointments')
-                        .select('id')
-                        .eq('business_id', business.id)
-                        .eq('appointment_date', date)
-                        .eq('appointment_time', time)
-                        .single();
-                    
-                    if (existingBooking) {
-                        this.showMessage('Este horário já está ocupado. Por favor, escolha outro horário.', 'error');
-                        return;
+                async loadData() {
+                    try {
+                        // Carregar estabelecimentos
+                        const { data: businessData, error: businessError } = await supabase
+                            .from('businesses')
+                            .select('*')
+                            .order('name');
+                        
+                        if (businessError && businessError.code !== 'PGRST116') {
+                            console.error('Erro ao carregar estabelecimentos:', businessError);
+                        } else {
+                            this.businesses = businessData || [];
+                        }
+                        
+                        // Carregar serviços
+                        const { data: serviceData, error: serviceError } = await supabase
+                            .from('services')
+                            .select('*')
+                            .eq('active', true)
+                            .order('name');
+                        
+                        if (serviceError && serviceError.code !== 'PGRST116') {
+                            console.error('Erro ao carregar serviços:', serviceError);
+                        } else {
+                            this.services = serviceData || [];
+                        }
+                        
+                        // Carregar agendamentos se usuário logado
+                        if (this.currentUser) {
+                            await this.loadAppointments();
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar dados:', error);
                     }
-                    
-                    // Create appointment
-                    const { data, error } = await supabase
-                        .from('appointments')
-                        .insert([{
-                            client_id: this.currentUser.id,
-                            business_id: business.id,
-                            service_id: service.id,
-                            appointment_date: date,
-                            appointment_time: time,
-                            notes: notes,
-                            status: 'confirmed',
-                            price: service.price
-                        }])
-                        .select(`
+                }
+                
+                async loadAppointments() {
+                    try {
+                        let query = supabase.from('appointments').select(`
                             *,
                             client:users!appointments_client_id_fkey(name, phone),
                             business:businesses!appointments_business_id_fkey(name),
                             service:services!appointments_service_id_fkey(name)
-                        `)
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    // Adicionar ao cache local
-                    this.appointments.unshift(data);
-                    
-                    this.showMessage('Agendamento realizado com sucesso!', 'success');
-                    this.selectedService = null;
-                    this.selectedBusiness = null;
-                    this.currentView = 'client-dashboard';
-                    this.render();
-                } catch (error) {
-                    console.error('Erro ao criar agendamento:', error);
-                    this.showMessage(error.message, 'error');
-                } finally {
-                    this.hideLoading(confirmBtn, 'Confirmar Agendamento');
+                        `);
+                        
+                        if (this.currentUser.user_type === 'business') {
+                            // Para empresas, buscar por business_id
+                            const { data: businessData } = await supabase
+                                .from('businesses')
+                                .select('id')
+                                .eq('user_id', this.currentUser.id)
+                                .single();
+                            
+                            if (businessData) {
+                                query = query.eq('business_id', businessData.id);
+                            }
+                        } else {
+                            query = query.eq('client_id', this.currentUser.id);
+                        }
+                        
+                        const { data, error } = await query.order('appointment_date', { ascending: false });
+                        
+                        if (error && error.code !== 'PGRST116') {
+                            console.error('Erro ao carregar agendamentos:', error);
+                        } else {
+                            this.appointments = data || [];
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar agendamentos:', error);
+                    }
                 }
-            }
-            
-            togglePassword() {
-                const passwordInput = document.getElementById('password');
-                const toggleBtn = document.getElementById('toggle-password');
                 
-                if (passwordInput && toggleBtn) {
-                    if (passwordInput.type === 'password') {
-                        passwordInput.type = 'text';
-                        toggleBtn.textContent = '🙈';
-                    } else {
-                        passwordInput.type = 'password';
-                        toggleBtn.textContent = '👁️';
+                showMessage(message, type = 'info') {
+                    const colors = {
+                        success: 'bg-green-100 text-green-800 border-green-200',
+                        error: 'bg-red-100 text-red-800 border-red-200',
+                        info: 'bg-blue-100 text-blue-800 border-blue-200',
+                        warning: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    };
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg border ${colors[type]} z-50 fade-in max-w-md`;
+                    messageDiv.innerHTML = `
+                        <div class="flex items-start gap-2">
+                            <span class="flex-1">${message}</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="text-lg font-bold">×</button>
+                        </div>
+                    `;
+                    document.body.appendChild(messageDiv);
+                    
+                    setTimeout(() => {
+                        if (messageDiv.parentElement) {
+                            messageDiv.remove();
+                        }
+                    }, 5000);
+                }
+                
+                render() {
+                    const root = document.getElementById('root');
+                    
+                    switch(this.currentView) {
+                        case 'login':
+                            root.innerHTML = this.renderLogin();
+                            break;
+                        case 'register':
+                            root.innerHTML = this.renderRegister();
+                            break;
+                        case 'forgot-password':
+                            root.innerHTML = this.renderForgotPassword();
+                            break;
+                        case 'email-sent':
+                            root.innerHTML = this.renderEmailSent();
+                            break;
+                        case 'business-dashboard':
+                            root.innerHTML = this.renderBusinessDashboard();
+                            break;
+                        case 'client-dashboard':
+                            root.innerHTML = this.renderClientDashboard();
+                            break;
+                        default:
+                            root.innerHTML = this.renderLogin();
+                    }
+                    
+                    this.attachEvents();
+                }
+                
+                renderLogin() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Beauty App</h1>
+                                    <p class="text-gray-600">Sistema de agendamento para salões de beleza</p>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="seu@email.com"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="Sua senha"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="login-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                    >
+                                        Entrar
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="forgot-password-btn"
+                                        class="text-pink-600 hover:text-pink-700 font-medium text-sm"
+                                    >
+                                        Esqueceu sua senha?
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <p class="text-gray-600 mb-4">Não tem uma conta?</p>
+                                    <div class="space-y-3">
+                                        <button
+                                            id="register-client-btn"
+                                            class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                                        >
+                                            👤 Cadastrar como Cliente
+                                        </button>
+                                        <button
+                                            id="register-business-btn"
+                                            class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300"
+                                        >
+                                            🏢 Cadastrar como Empresa
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <p class="text-xs text-gray-500">
+                                        Versão de teste - Sistema conectado ao Supabase
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderRegister() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                                        ${this.userType === 'business' ? 'Cadastro de Empresa' : 'Cadastro de Cliente'}
+                                    </h1>
+                                    <p class="text-gray-600">Preencha os dados abaixo</p>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ${this.userType === 'business' ? 'Nome da Empresa' : 'Nome Completo'}
+                                        </label>
+                                        <input
+                                            id="reg-name"
+                                            type="text"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="reg-email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                                        <input
+                                            id="reg-phone"
+                                            type="tel"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="(48) 99999-9999"
+                                        />
+                                    </div>
+
+                                    ${this.userType === 'business' ? `
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
+                                        <input
+                                            id="reg-address"
+                                            type="text"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    ` : ''}
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                        <input
+                                            id="reg-password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            minlength="6"
+                                        />
+                                        <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Senha</label>
+                                        <input
+                                            id="reg-confirm-password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="register-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                    >
+                                        Cadastrar
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="back-to-login"
+                                        class="text-pink-600 hover:text-pink-700 font-medium"
+                                    >
+                                        Voltar ao Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderForgotPassword() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Recuperar Senha</h1>
+                                    <p class="text-gray-600">Digite seu email para receber as instruções</p>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="forgot-email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="seu@email.com"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="send-reset-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                    >
+                                        Enviar Instruções
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="back-to-login-forgot"
+                                        class="text-pink-600 hover:text-pink-700 font-medium"
+                                    >
+                                        Voltar ao Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderEmailSent() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in text-center">
+                                <div class="text-6xl mb-4">📧</div>
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Email Enviado!</h1>
+                                <p class="text-gray-600 mb-6">
+                                    Verifique sua caixa de entrada${this.pendingVerificationEmail ? ` (${this.pendingVerificationEmail})` : ''} 
+                                    e clique no link para verificar sua conta.
+                                </p>
+                                <p class="text-sm text-gray-500 mb-6">
+                                    Não encontrou o email? Verifique a pasta de spam.
+                                </p>
+                                <button
+                                    id="back-to-login-email"
+                                    class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition duration-300"
+                                >
+                                    Voltar ao Login
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderBusinessDashboard() {
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-white shadow-sm border-b">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Sistema Conectado!</h2>
+                                    <p class="text-gray-600 mb-4">
+                                        Parabéns! Seu Beauty App está funcionando com Supabase.
+                                    </p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="bg-green-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-green-800">✅ Conectado</h3>
+                                            <p class="text-sm text-green-600">Banco de dados Supabase ativo</p>
+                                        </div>
+                                        <div class="bg-blue-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-blue-800">📧 Emails</h3>
+                                            <p class="text-sm text-blue-600">Sistema de verificação funcionando</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderClientDashboard() {
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-white shadow-sm border-b">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Bem-vindo!</h2>
+                                    <p class="text-gray-600">
+                                        Seu cadastro foi realizado com sucesso no Beauty App.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Event handlers
+                attachEvents() {
+                    // Login
+                    const loginBtn = document.getElementById('login-btn');
+                    if (loginBtn) {
+                        loginBtn.addEventListener('click', () => this.handleLogin());
+                    }
+                    
+                    // Register navigation
+                    const registerClientBtn = document.getElementById('register-client-btn');
+                    if (registerClientBtn) {
+                        registerClientBtn.addEventListener('click', () => {
+                            this.userType = 'client';
+                            this.currentView = 'register';
+                            this.render();
+                        });
+                    }
+                    
+                    const registerBusinessBtn = document.getElementById('register-business-btn');
+                    if (registerBusinessBtn) {
+                        registerBusinessBtn.addEventListener('click', () => {
+                            this.userType = 'business';
+                            this.currentView = 'register';
+                            this.render();
+                        });
+                    }
+                    
+                    // Register
+                    const registerBtn = document.getElementById('register-btn');
+                    if (registerBtn) {
+                        registerBtn.addEventListener('click', () => this.handleRegister());
+                    }
+                    
+                    // Back to login
+                    const backToLogin = document.getElementById('back-to-login');
+                    if (backToLogin) {
+                        backToLogin.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    const backToLoginForgot = document.getElementById('back-to-login-forgot');
+                    if (backToLoginForgot) {
+                        backToLoginForgot.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    const backToLoginEmail = document.getElementById('back-to-login-email');
+                    if (backToLoginEmail) {
+                        backToLoginEmail.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    // Forgot password
+                    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+                    if (forgotPasswordBtn) {
+                        forgotPasswordBtn.addEventListener('click', () => {
+                            this.currentView = 'forgot-password';
+                            this.render();
+                        });
+                    }
+                    
+                    const sendResetBtn = document.getElementById('send-reset-btn');
+                    if (sendResetBtn) {
+                        sendResetBtn.addEventListener('click', () => this.handleForgotPassword());
+                    }
+                    
+                    // Logout
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', () => this.handleLogout());
+                    }
+                    
+                    // Enter key support
+                    document.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter' && !this.loading) {
+                            if (this.currentView === 'login') {
+                                this.handleLogin();
+                            } else if (this.currentView === 'register') {
+                                this.handleRegister();
+                            } else if (this.currentView === 'forgot-password') {
+                                this.handleForgotPassword();
+                            }
+                        }
+                    });
+                }
+                
+                // Authentication methods
+                async handleLogin() {
+                    const email = document.getElementById('email').value.trim();
+                    const password = document.getElementById('password').value;
+                    
+                    if (!email || !password) {
+                        this.showMessage('Por favor, preencha email e senha', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('🔐 Tentando login...');
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: password
+                        });
+                        
+                        if (error) throw error;
+                        
+                        console.log('✅ Login realizado:', data);
+                        this.showMessage('Login realizado com sucesso!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro no login:', error);
+                        this.showMessage('Erro no login: ' + error.message, 'error');
+                    }
+                }
+                
+                async handleRegister() {
+                    const name = document.getElementById('reg-name').value.trim();
+                    const email = document.getElementById('reg-email').value.trim();
+                    const phone = document.getElementById('reg-phone').value.trim();
+                    const password = document.getElementById('reg-password').value;
+                    const confirmPassword = document.getElementById('reg-confirm-password').value;
+                    const address = document.getElementById('reg-address')?.value.trim() || '';
+                    
+                    if (!name || !email || !phone || !password || !confirmPassword) {
+                        this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
+                        return;
+                    }
+                    
+                    if (password.length < 6) {
+                        this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        this.showMessage('As senhas não coincidem!', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('📝 Registrando usuário...');
+                        const { data, error } = await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: {
+                                data: {
+                                    name: name,
+                                    user_type: this.userType,
+                                    phone: phone,
+                                    address: address
+                                }
+                            }
+                        });
+                        
+                        if (error) throw error;
+                        
+                        console.log('✅ Usuário registrado:', data);
+                        this.pendingVerificationEmail = email;
+                        this.currentView = 'email-sent';
+                        this.render();
+                        this.showMessage('Cadastro realizado! Verifique seu email.', 'success');
+                        
+                    } catch (error) {
+                        console.error('❌ Erro no cadastro:', error);
+                        this.showMessage('Erro no cadastro: ' + error.message, 'error');
+                    }
+                }
+                
+                async handleForgotPassword() {
+                    const email = document.getElementById('forgot-email').value.trim();
+                    
+                    if (!email) {
+                        this.showMessage('Por favor, digite seu email', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('🔄 Enviando email de recuperação...');
+                        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                            redirectTo: window.location.origin + window.location.pathname
+                        });
+                        
+                        if (error) throw error;
+                        
+                        this.pendingVerificationEmail = email;
+                        this.currentView = 'email-sent';
+                        this.render();
+                        this.showMessage('Email de recuperação enviado!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro ao enviar email:', error);
+                        this.showMessage('Erro ao enviar email: ' + error.message, 'error');
+                    }
+                }
+                
+                async handleLogout() {
+                    try {
+                        const { error } = await supabase.auth.signOut();
+                        if (error) throw error;
+                        
+                        this.currentUser = null;
+                        this.currentView = 'login';
+                        this.render();
+                        this.showMessage('Logout realizado com sucesso!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro no logout:', error);
+                        this.showMessage('Erro no logout: ' + error.message, 'error');
                     }
                 }
             }
-        }
-        
-        // Verificar se há parâmetros de reset de senha na URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const resetToken = urlParams.get('token');
-        const resetType = urlParams.get('type');
-
-        // Criar instância global para acesso nas funções onclick
-        let app;
-        
-        // Inicializar aplicação quando a página carregar
-        document.addEventListener('DOMContentLoaded', async () => {
-            app = new BeautyApp();
             
-            // Se há token de reset, ir para tela de reset
-            if (resetToken && resetType === 'recovery') {
-                app.currentView = 'reset-password';
-                app.render();
-            }
-        });
-        
-        // Fallback caso DOMContentLoaded já tenha disparado
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', async () => {
-                app = new BeautyApp();
-                
-                if (resetToken && resetType === 'recovery') {
-                    app.currentView = 'reset-password';
-                    app.render();
-                }
-            });
-        } else {
-            app = new BeautyApp();
-            
-            if (resetToken && resetType === 'recovery') {
-                app.currentView = 'reset-password';
-                app.render();
-            }
+            // Inicializar aplicação
+            window.app = new BeautyApp();
         }
     </script>
 </body>
