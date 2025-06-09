@@ -291,6 +291,8 @@
                 async createUserRecord(authUser) {
                     try {
                         const userData = authUser.user_metadata || {};
+                        console.log(`📝 Criando registro para: ${authUser.email} (${userData.user_type})`);
+                        
                         const { data, error } = await supabase
                             .from('users')
                             .insert([{
@@ -307,20 +309,23 @@
                         
                         if (error) throw error;
                         this.currentUser = data;
-                        console.log('👤 Usuário criado:', data);
+                        console.log(`✅ Usuário criado: ${data.name} (${data.user_type})`);
                         
+                        // Se é um negócio, criar registro na tabela businesses
                         if (userData.user_type === 'business' && userData.name) {
+                            console.log('🏢 Criando estabelecimento para empresa...');
                             await this.createBusinessRecord(data);
                         }
                         
                     } catch (error) {
-                        console.error('❌ Erro ao criar registro do usuário:', error);
+                        console.error('❌ Erro ao criar usuário:', error);
                         this.showMessage('Erro ao criar perfil: ' + error.message, 'error');
                     }
                 }
                 
                 async createBusinessRecord(user) {
                     try {
+                        console.log(`🏢 Criando estabelecimento para: ${user.name}`);
                         const { data, error } = await supabase
                             .from('businesses')
                             .insert([{
@@ -328,15 +333,21 @@
                                 name: user.name,
                                 address: user.address || '',
                                 phone: user.phone || '',
-                                email: user.email
+                                email: user.email,
+                                active: true
                             }])
                             .select()
                             .single();
                         
                         if (error) throw error;
-                        console.log('🏢 Estabelecimento criado:', data);
+                        console.log(`✅ Estabelecimento criado: ${data.name}`);
+                        
+                        // Atualizar cache de businesses
+                        await this.loadData();
+                        
                     } catch (error) {
                         console.error('❌ Erro ao criar estabelecimento:', error);
+                        // Não mostrar erro para o usuário aqui, pois será criado automaticamente quando necessário
                     }
                 }
                 
@@ -518,7 +529,7 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        ✅ Beauty App v3.0 - Gerenciamento Completo
+                                        ✅ Beauty App v3.1 - Erro "Estabelecimento não encontrado" corrigido
                                     </p>
                                 </div>
                             </div>
@@ -936,7 +947,7 @@
                                                 id="service-description"
                                                 rows="3"
                                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                                placeholder="Descreva o serviço..."
+                                                placeholder="Ex: Corte moderno com finalização profissional"
                                             ></textarea>
                                         </div>
 
@@ -1472,11 +1483,16 @@
                         title.textContent = '➕ Adicionar Serviço';
                         form.reset();
                         document.getElementById('service-duration').value = 60;
+                        document.getElementById('service-description').value = ''; // Limpar descrição
                     }
                     
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
-                    document.getElementById('service-name').focus();
+                    
+                    // Focar no campo nome após um pequeno delay para garantir que o modal esteja visível
+                    setTimeout(() => {
+                        document.getElementById('service-name').focus();
+                    }, 100);
                 }
 
                 closeServiceModal() {
@@ -1514,16 +1530,8 @@
                         saveBtn.textContent = 'Salvando...';
                         saveBtn.disabled = true;
 
-                        // Buscar o business_id da empresa
-                        const { data: businessData } = await supabase
-                            .from('businesses')
-                            .select('id')
-                            .eq('user_id', this.currentUser.id)
-                            .single();
-
-                        if (!businessData) {
-                            throw new Error('Estabelecimento não encontrado');
-                        }
+                        // Garantir que o estabelecimento existe
+                        const businessData = await this.ensureBusinessExists();
 
                         const serviceData = {
                             business_id: businessData.id,
@@ -1600,7 +1608,7 @@
                     const service = this.services.find(s => s.id === serviceId);
                     if (!service) return;
 
-                    if (!confirm(`Tem certeza que deseja excluir o serviço "${service.name}"?`)) {
+                    if (!confirm(`Tem certeza que deseja excluir o serviço "${service.name}"?\n\nEsta ação não pode ser desfeita.`)) {
                         return;
                     }
 
@@ -1619,6 +1627,50 @@
                     } catch (error) {
                         console.error('❌ Erro ao excluir serviço:', error);
                         this.showMessage('Erro ao excluir serviço: ' + error.message, 'error');
+                    }
+                }
+
+                // ========================================
+                // FUNÇÃO AUXILIAR PARA GARANTIR BUSINESS
+                // ========================================
+
+                async ensureBusinessExists() {
+                    try {
+                        // Verificar se o estabelecimento já existe
+                        let { data: businessData } = await supabase
+                            .from('businesses')
+                            .select('id')
+                            .eq('user_id', this.currentUser.id)
+                            .single();
+
+                        // Se não existir, criar
+                        if (!businessData) {
+                            console.log('🏢 Criando estabelecimento automaticamente...');
+                            
+                            const { data: newBusiness, error } = await supabase
+                                .from('businesses')
+                                .insert([{
+                                    user_id: this.currentUser.id,
+                                    name: this.currentUser.name || 'Minha Empresa',
+                                    address: this.currentUser.address || '',
+                                    phone: this.currentUser.phone || '',
+                                    email: this.currentUser.email,
+                                    active: true
+                                }])
+                                .select()
+                                .single();
+
+                            if (error) throw error;
+                            businessData = newBusiness;
+                            
+                            // Atualizar cache
+                            await this.loadData();
+                        }
+
+                        return businessData;
+                    } catch (error) {
+                        console.error('❌ Erro ao garantir estabelecimento:', error);
+                        throw new Error(`Não foi possível criar/encontrar estabelecimento: ${error.message}`);
                     }
                 }
 
