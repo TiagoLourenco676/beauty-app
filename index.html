@@ -70,27 +70,29 @@
         // Verificar se as credenciais foram configuradas
         if (SUPABASE_ANON_KEY === 'SUA_CHAVE_ANON_CORRETA_AQUI') {
             showConfigurationError();
-            return;
-        }
-        
-        // Verificar se o Supabase foi carregado
-        if (typeof window.supabase === 'undefined') {
+        } else if (typeof window.supabase === 'undefined') {
+            // Verificar se o Supabase foi carregado
             console.error('❌ Supabase não foi carregado!');
             showLibraryError();
-            return;
+        } else {
+            // Inicializar Supabase se tudo estiver OK
+            initializeSupabase();
         }
         
-        // Inicializar Supabase
-        try {
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase conectado com sucesso!');
-            
-            // Testar conexão básica
-            testConnection();
-            
-        } catch (error) {
-            console.error('❌ Erro ao inicializar Supabase:', error);
-            showConnectionError(error);
+        function initializeSupabase() {
+        
+        function initializeSupabase() {
+            try {
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase conectado com sucesso!');
+                
+                // Testar conexão básica
+                testConnection();
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                showConnectionError(error);
+            }
         }
         
         function showConfigurationError() {
