@@ -46,6 +46,13 @@
             font-size: 0.8rem;
             color: #c33;
         }
+        .tab-button {
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-button:hover {
+            background-color: #f3f4f6;
+        }
     </style>
 </head>
 <body>
@@ -194,11 +201,19 @@
                     this.userType = '';
                     this.loading = false;
                     this.pendingVerificationEmail = null;
+                    this.isAdmin = false;
+                    this.selectedServiceId = null;
+                    this.selectedBusinessId = null;
                     
                     // Cache de dados
                     this.businesses = [];
                     this.services = [];
                     this.appointments = [];
+                    
+                    // Dados administrativos (todos os dados)
+                    this.allUsers = [];
+                    this.allServices = [];
+                    this.allAppointments = [];
                     
                     this.init();
                 }
@@ -222,12 +237,13 @@
                         // Escutar mudanças de autenticação
                         supabase.auth.onAuthStateChange(async (event, session) => {
                             console.log('🔄 Auth state changed:', event);
-                            if (event === 'SIGNED_IN') {
+                            if (event === 'SIGNED_IN' && !this.isAdmin) {
                                 await this.loadUserData(session.user);
                                 this.currentView = this.currentUser?.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
                                 this.render();
                             } else if (event === 'SIGNED_OUT') {
                                 this.currentUser = null;
+                                this.isAdmin = false;
                                 this.currentView = 'login';
                                 this.render();
                             }
@@ -453,11 +469,359 @@
                         case 'client-dashboard':
                             root.innerHTML = this.renderClientDashboard();
                             break;
+                        case 'admin-dashboard':
+                            root.innerHTML = this.renderAdminDashboard();
+                            break;
                         default:
                             root.innerHTML = this.renderLogin();
                     }
                     
                     this.attachEvents();
+                }
+
+                renderAdminDashboard() {
+                    // Calcular estatísticas gerais
+                    const totalUsers = this.allUsers?.length || 0;
+                    const totalBusinesses = this.businesses?.length || 0;
+                    const totalServices = this.allServices?.length || 0;
+                    const totalAppointments = this.allAppointments?.length || 0;
+                    
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-gray-900 shadow-sm">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                                                <span class="text-white font-bold">👑</span>
+                                            </div>
+                                            <div>
+                                                <h1 class="text-2xl font-bold text-white">Dashboard Administrativo</h1>
+                                                <p class="text-sm text-gray-300">Controle total do Beauty App</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <!-- Cards de Estatísticas Gerais -->
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-blue-100">Total de Usuários</p>
+                                                <p class="text-3xl font-bold">${totalUsers}</p>
+                                            </div>
+                                            <div class="text-4xl opacity-80">👥</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-green-100">Estabelecimentos</p>
+                                                <p class="text-3xl font-bold">${totalBusinesses}</p>
+                                            </div>
+                                            <div class="text-4xl opacity-80">🏢</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-purple-100">Total de Serviços</p>
+                                                <p class="text-3xl font-bold">${totalServices}</p>
+                                            </div>
+                                            <div class="text-4xl opacity-80">💼</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow p-6 text-white">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-orange-100">Agendamentos</p>
+                                                <p class="text-3xl font-bold">${totalAppointments}</p>
+                                            </div>
+                                            <div class="text-4xl opacity-80">📅</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Navegação por Abas -->
+                                <div class="bg-white rounded-lg shadow">
+                                    <div class="border-b border-gray-200">
+                                        <nav class="flex">
+                                            <button
+                                                id="tab-businesses"
+                                                class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600"
+                                            >
+                                                🏢 Estabelecimentos
+                                            </button>
+                                            <button
+                                                id="tab-users"
+                                                class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+                                            >
+                                                👥 Usuários
+                                            </button>
+                                            <button
+                                                id="tab-services"
+                                                class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+                                            >
+                                                💼 Serviços
+                                            </button>
+                                            <button
+                                                id="tab-appointments"
+                                                class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+                                            >
+                                                📅 Agendamentos
+                                            </button>
+                                        </nav>
+                                    </div>
+
+                                    <!-- Conteúdo das Abas -->
+                                    <div class="p-6">
+                                        <!-- Aba Estabelecimentos -->
+                                        <div id="content-businesses" class="tab-content">
+                                            <div class="flex justify-between items-center mb-6">
+                                                <h3 class="text-lg font-semibold text-gray-900">Estabelecimentos Cadastrados</h3>
+                                                <span class="text-sm text-gray-500">${totalBusinesses} total</span>
+                                            </div>
+                                            
+                                            ${this.businesses.length > 0 ? `
+                                                <div class="overflow-x-auto">
+                                                    <table class="min-w-full divide-y divide-gray-200">
+                                                        <thead class="bg-gray-50">
+                                                            <tr>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estabelecimento</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proprietário</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serviços</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white divide-y divide-gray-200">
+                                                            ${this.businesses.map(business => {
+                                                                const owner = this.allUsers?.find(u => u.id === business.user_id);
+                                                                const businessServices = this.allServices?.filter(s => s.business_id === business.id) || [];
+                                                                return `
+                                                                    <tr>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <div>
+                                                                                <div class="text-sm font-medium text-gray-900">${business.name}</div>
+                                                                                <div class="text-sm text-gray-500">${business.address || 'Endereço não informado'}</div>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <div class="text-sm text-gray-900">${owner?.name || 'N/A'}</div>
+                                                                            <div class="text-sm text-gray-500">${owner?.email || ''}</div>
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                            ${businessServices.length} serviços
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${business.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                                                ${business.active ? 'Ativo' : 'Inativo'}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                                            <button
+                                                                                onclick="app.toggleBusinessStatus('${business.id}')"
+                                                                                class="text-blue-600 hover:text-blue-900 mr-3"
+                                                                            >
+                                                                                ${business.active ? 'Desativar' : 'Ativar'}
+                                                                            </button>
+                                                                            <button
+                                                                                onclick="app.viewBusinessDetails('${business.id}')"
+                                                                                class="text-green-600 hover:text-green-900"
+                                                                            >
+                                                                                Detalhes
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                `;
+                                                            }).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ` : `
+                                                <div class="text-center py-12">
+                                                    <div class="text-6xl mb-4">🏢</div>
+                                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum estabelecimento cadastrado</h3>
+                                                    <p class="text-gray-600">Quando empresas se cadastrarem, aparecerão aqui.</p>
+                                                </div>
+                                            `}
+                                        </div>
+
+                                        <!-- Aba Usuários -->
+                                        <div id="content-users" class="tab-content hidden">
+                                            <div class="flex justify-between items-center mb-6">
+                                                <h3 class="text-lg font-semibold text-gray-900">Usuários Cadastrados</h3>
+                                                <span class="text-sm text-gray-500">${totalUsers} total</span>
+                                            </div>
+                                            
+                                            ${this.allUsers?.length > 0 ? `
+                                                <div class="overflow-x-auto">
+                                                    <table class="min-w-full divide-y divide-gray-200">
+                                                        <thead class="bg-gray-50">
+                                                            <tr>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cadastro</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white divide-y divide-gray-200">
+                                                            ${this.allUsers.map(user => `
+                                                                <tr>
+                                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                                        <div>
+                                                                            <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                                                                            <div class="text-sm text-gray-500">${user.email}</div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.user_type === 'business' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                                                            ${user.user_type === 'business' ? '🏢 Empresa' : '👤 Cliente'}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                        ${new Date(user.created_at).toLocaleDateString('pt-BR')}
+                                                                    </td>
+                                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.email_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                                                            ${user.email_verified ? 'Verificado' : 'Pendente'}
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            `).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ` : `
+                                                <div class="text-center py-12">
+                                                    <div class="text-6xl mb-4">👥</div>
+                                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum usuário cadastrado</h3>
+                                                    <p class="text-gray-600">Os usuários cadastrados aparecerão aqui.</p>
+                                                </div>
+                                            `}
+                                        </div>
+
+                                        <!-- Aba Serviços -->
+                                        <div id="content-services" class="tab-content hidden">
+                                            <div class="flex justify-between items-center mb-6">
+                                                <h3 class="text-lg font-semibold text-gray-900">Todos os Serviços</h3>
+                                                <span class="text-sm text-gray-500">${totalServices} total</span>
+                                            </div>
+                                            
+                                            ${this.allServices?.length > 0 ? `
+                                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                    ${this.allServices.map(service => {
+                                                        const business = this.businesses?.find(b => b.id === service.business_id);
+                                                        return `
+                                                            <div class="border border-gray-200 rounded-lg p-4">
+                                                                <div class="flex justify-between items-start mb-3">
+                                                                    <h4 class="font-medium text-gray-900">${service.name}</h4>
+                                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${service.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                                        ${service.active ? 'Ativo' : 'Inativo'}
+                                                                    </span>
+                                                                </div>
+                                                                <p class="text-sm text-gray-600 mb-3">${service.description || 'Sem descrição'}</p>
+                                                                <div class="space-y-1 text-sm">
+                                                                    <p><span class="font-medium">Estabelecimento:</span> ${business?.name || 'N/A'}</p>
+                                                                    <p><span class="font-medium">Duração:</span> ${service.duration_minutes} min</p>
+                                                                    <p><span class="font-medium">Preço:</span> R$ ${service.price}</p>
+                                                                </div>
+                                                            </div>
+                                                        `;
+                                                    }).join('')}
+                                                </div>
+                                            ` : `
+                                                <div class="text-center py-12">
+                                                    <div class="text-6xl mb-4">💼</div>
+                                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum serviço cadastrado</h3>
+                                                    <p class="text-gray-600">Os serviços das empresas aparecerão aqui.</p>
+                                                </div>
+                                            `}
+                                        </div>
+
+                                        <!-- Aba Agendamentos -->
+                                        <div id="content-appointments" class="tab-content hidden">
+                                            <div class="flex justify-between items-center mb-6">
+                                                <h3 class="text-lg font-semibold text-gray-900">Todos os Agendamentos</h3>
+                                                <span class="text-sm text-gray-500">${totalAppointments} total</span>
+                                            </div>
+                                            
+                                            ${this.allAppointments?.length > 0 ? `
+                                                <div class="overflow-x-auto">
+                                                    <table class="min-w-full divide-y divide-gray-200">
+                                                        <thead class="bg-gray-50">
+                                                            <tr>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estabelecimento</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serviço</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="bg-white divide-y divide-gray-200">
+                                                            ${this.allAppointments.map(appointment => {
+                                                                const client = this.allUsers?.find(u => u.id === appointment.client_id);
+                                                                const business = this.businesses?.find(b => b.id === appointment.business_id);
+                                                                const service = this.allServices?.find(s => s.id === appointment.service_id);
+                                                                return `
+                                                                    <tr>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <div class="text-sm font-medium text-gray-900">${client?.name || 'N/A'}</div>
+                                                                            <div class="text-sm text-gray-500">${client?.email || ''}</div>
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                            ${business?.name || 'N/A'}
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                            ${service?.name || 'N/A'}
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <div class="text-sm text-gray-900">${appointment.appointment_date}</div>
+                                                                            <div class="text-sm text-gray-500">${appointment.appointment_time}</div>
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                                                appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                                appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                                                'bg-gray-100 text-gray-800'
+                                                                            }">
+                                                                                ${appointment.status === 'confirmed' ? 'Confirmado' :
+                                                                                appointment.status === 'pending' ? 'Pendente' :
+                                                                                appointment.status === 'cancelled' ? 'Cancelado' : 'Concluído'}
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                `;
+                                                            }).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ` : `
+                                                <div class="text-center py-12">
+                                                    <div class="text-6xl mb-4">📅</div>
+                                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum agendamento encontrado</h3>
+                                                    <p class="text-gray-600">Os agendamentos aparecerão aqui conforme forem feitos.</p>
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
                 
                 renderLogin() {
@@ -500,12 +864,14 @@
                                     </button>
                                 </div>
 
-                                <div class="mt-6 text-center">
+                                <!-- Login Administrativo -->
+                                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                                    <h3 class="text-sm font-medium text-gray-700 mb-3">👑 Acesso Administrativo</h3>
                                     <button
-                                        id="forgot-password-btn"
-                                        class="text-pink-600 hover:text-pink-700 font-medium text-sm transition duration-200"
+                                        id="admin-login-btn"
+                                        class="w-full bg-gray-800 text-white py-2 rounded-lg hover:bg-gray-900 transition duration-300 text-sm"
                                     >
-                                        Esqueceu sua senha?
+                                        Login como Administrador
                                     </button>
                                 </div>
 
@@ -529,8 +895,49 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        ✅ Beauty App v3.1 - Erro "Estabelecimento não encontrado" corrigido
+                                        ✅ Beauty App v4.0 - Sistema Completo com Isolamento e Super Admin
                                     </p>
+                                </div>
+                            </div>
+
+                            <!-- Modal de Login Admin -->
+                            <div id="admin-login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                                <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4">
+                                    <div class="text-center mb-6">
+                                        <h2 class="text-2xl font-bold text-gray-900">👑 Login Administrativo</h2>
+                                        <p class="text-gray-600 mt-2">Acesso completo ao sistema</p>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha de Administrador</label>
+                                            <input
+                                                id="admin-password"
+                                                type="password"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                                placeholder="Digite a senha master"
+                                            />
+                                        </div>
+
+                                        <div class="flex gap-3">
+                                            <button
+                                                id="admin-login-confirm"
+                                                class="flex-1 bg-gray-800 text-white py-3 rounded-lg hover:bg-gray-900 transition duration-300"
+                                            >
+                                                Entrar
+                                            </button>
+                                            <button
+                                                id="admin-login-cancel"
+                                                class="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 text-xs text-gray-500 text-center">
+                                        Senha padrão: <code class="bg-gray-100 px-1 rounded">admin123</code>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1071,7 +1478,15 @@
                             <header class="bg-white shadow-sm border-b">
                                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                                     <div class="flex justify-between items-center py-4">
-                                        <h1 class="text-2xl font-bold text-gray-900">👤 Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                <span class="text-white font-bold">👤</span>
+                                            </div>
+                                            <div>
+                                                <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
+                                                <p class="text-sm text-gray-500">Encontre e agende seus serviços de beleza</p>
+                                            </div>
+                                        </div>
                                         <button
                                             id="logout-btn"
                                             class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
@@ -1083,36 +1498,249 @@
                             </header>
 
                             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Barra de Busca -->
+                                <div class="mb-8">
                                     <div class="bg-white rounded-lg shadow p-6">
-                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Bem-vindo!</h2>
-                                        <p class="text-gray-600 mb-4">
-                                            Seu cadastro foi realizado com sucesso no Beauty App.
-                                        </p>
-                                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                            <p class="text-green-800">
-                                                ✅ Conta verificada e ativa
-                                            </p>
+                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">🔍 Encontre serviços de beleza</h2>
+                                        <div class="flex gap-4">
+                                            <input
+                                                id="search-services"
+                                                type="text"
+                                                placeholder="Buscar por serviço ou estabelecimento..."
+                                                class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                            <button
+                                                id="search-btn"
+                                                class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300"
+                                            >
+                                                Buscar
+                                            </button>
                                         </div>
                                     </div>
-                                    
-                                    <div class="bg-white rounded-lg shadow p-6">
-                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">📍 Estabelecimentos Disponíveis</h2>
-                                        ${this.businesses.length > 0 ? `
-                                            <div class="space-y-3">
-                                                ${this.businesses.slice(0, 3).map(business => `
-                                                    <div class="border border-gray-200 rounded-lg p-3">
-                                                        <h3 class="font-medium text-gray-800">${business.name}</h3>
-                                                        <p class="text-sm text-gray-600">${business.address}</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    <!-- Lista de Estabelecimentos e Serviços -->
+                                    <div class="lg:col-span-2">
+                                        <div class="bg-white rounded-lg shadow">
+                                            <div class="p-6 border-b border-gray-200">
+                                                <h2 class="text-xl font-semibold text-gray-900">🏢 Estabelecimentos Disponíveis</h2>
+                                            </div>
+                                            
+                                            <div class="p-6">
+                                                ${this.businesses.length > 0 ? `
+                                                    <div class="space-y-6">
+                                                        ${this.businesses.map(business => {
+                                                            const businessServices = this.services.filter(s => s.business_id === business.id && s.active);
+                                                            return `
+                                                                <div data-business-card class="border border-gray-200 rounded-lg p-6">
+                                                                    <div class="flex items-start justify-between mb-4">
+                                                                        <div>
+                                                                            <h3 class="text-lg font-semibold text-gray-900">${business.name}</h3>
+                                                                            <p class="text-gray-600">${business.address || 'Endereço não informado'}</p>
+                                                                            ${business.phone ? `<p class="text-sm text-gray-500">📞 ${business.phone}</p>` : ''}
+                                                                        </div>
+                                                                        <div class="text-right">
+                                                                            <span class="inline-block px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                                                                ${businessServices.length} serviços
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    ${businessServices.length > 0 ? `
+                                                                        <div class="space-y-3">
+                                                                            <h4 class="font-medium text-gray-900">Serviços disponíveis:</h4>
+                                                                            <div class="grid grid-cols-1 gap-3">
+                                                                                ${businessServices.map(service => `
+                                                                                    <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                                                                                        <div class="flex-1">
+                                                                                            <h5 class="font-medium text-gray-900">${service.name}</h5>
+                                                                                            ${service.description ? `<p class="text-sm text-gray-600 mt-1">${service.description}</p>` : ''}
+                                                                                            <div class="flex items-center gap-4 mt-2">
+                                                                                                <span class="text-sm text-gray-500">⏱️ ${service.duration_minutes} min</span>
+                                                                                                <span class="text-lg font-semibold text-green-600">R$ ${service.price}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <button
+                                                                                            onclick="app.openBookingModal('${service.id}', '${business.id}')"
+                                                                                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 ml-4"
+                                                                                        >
+                                                                                            📅 Agendar
+                                                                                        </button>
+                                                                                    </div>
+                                                                                `).join('')}
+                                                                            </div>
+                                                                        </div>
+                                                                    ` : `
+                                                                        <p class="text-gray-500">Nenhum serviço disponível no momento</p>
+                                                                    `}
+                                                                </div>
+                                                            `;
+                                                        }).join('')}
                                                     </div>
-                                                `).join('')}
+                                                ` : `
+                                                    <div class="text-center py-12">
+                                                        <div class="text-6xl mb-4">🏢</div>
+                                                        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum estabelecimento disponível</h3>
+                                                        <p class="text-gray-600">Ainda não há salões cadastrados na plataforma.</p>
+                                                    </div>
+                                                `}
                                             </div>
-                                        ` : `
-                                            <div class="text-center py-8 text-gray-500">
-                                                <p>Ainda não há estabelecimentos cadastrados</p>
-                                            </div>
-                                        `}
+                                        </div>
                                     </div>
+
+                                    <!-- Sidebar -->
+                                    <div class="space-y-6">
+                                        <!-- Meus Agendamentos -->
+                                        <div class="bg-white rounded-lg shadow">
+                                            <div class="p-6 border-b border-gray-200">
+                                                <h3 class="text-lg font-semibold text-gray-900">📅 Meus Agendamentos</h3>
+                                            </div>
+                                            <div class="p-6">
+                                                ${this.appointments.length > 0 ? `
+                                                    <div class="space-y-3">
+                                                        ${this.appointments.slice(0, 3).map(appointment => `
+                                                            <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                                                                <div class="w-2 h-8 bg-blue-500 rounded"></div>
+                                                                <div class="flex-1">
+                                                                    <p class="font-medium text-gray-900">${appointment.service?.name || 'Serviço'}</p>
+                                                                    <p class="text-sm text-gray-600">${appointment.business?.name || 'Estabelecimento'}</p>
+                                                                    <p class="text-xs text-gray-500">${appointment.appointment_date} às ${appointment.appointment_time}</p>
+                                                                    <span class="inline-block mt-1 px-2 py-1 text-xs rounded-full ${
+                                                                        appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                                        appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                        appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                                        'bg-gray-100 text-gray-800'
+                                                                    }">
+                                                                        ${appointment.status === 'confirmed' ? 'Confirmado' :
+                                                                        appointment.status === 'pending' ? 'Pendente' :
+                                                                        appointment.status === 'cancelled' ? 'Cancelado' : 'Concluído'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        `).join('')}
+                                                        
+                                                        ${this.appointments.length > 3 ? `
+                                                            <button class="w-full text-blue-600 hover:text-blue-700 text-sm py-2">
+                                                                Ver todos os agendamentos (${this.appointments.length})
+                                                            </button>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : `
+                                                    <p class="text-gray-600 text-center py-4">Nenhum agendamento ainda</p>
+                                                `}
+                                            </div>
+                                        </div>
+
+                                        <!-- Estatísticas -->
+                                        <div class="bg-white rounded-lg shadow">
+                                            <div class="p-6 border-b border-gray-200">
+                                                <h3 class="text-lg font-semibold text-gray-900">📊 Resumo</h3>
+                                            </div>
+                                            <div class="p-6 space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-gray-600">Estabelecimentos</span>
+                                                    <span class="font-semibold text-blue-600">${this.businesses.length}</span>
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-gray-600">Serviços Disponíveis</span>
+                                                    <span class="font-semibold text-green-600">${this.services.filter(s => s.active).length}</span>
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-gray-600">Meus Agendamentos</span>
+                                                    <span class="font-semibold text-purple-600">${this.appointments.length}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modal de Agendamento -->
+                            <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                                <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-2xl font-bold text-gray-900">📅 Agendar Serviço</h2>
+                                        <button id="close-booking-modal" class="text-gray-500 hover:text-gray-700">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <form id="booking-form" class="space-y-6">
+                                        <div id="service-info" class="bg-gray-50 rounded-lg p-4">
+                                            <!-- Informações do serviço serão inseridas aqui -->
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
+                                                <input
+                                                    id="booking-date"
+                                                    type="date"
+                                                    required
+                                                    min="${new Date().toISOString().split('T')[0]}"
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Horário</label>
+                                                <select
+                                                    id="booking-time"
+                                                    required
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                >
+                                                    <option value="">Selecione</option>
+                                                    <option value="08:00">08:00</option>
+                                                    <option value="08:30">08:30</option>
+                                                    <option value="09:00">09:00</option>
+                                                    <option value="09:30">09:30</option>
+                                                    <option value="10:00">10:00</option>
+                                                    <option value="10:30">10:30</option>
+                                                    <option value="11:00">11:00</option>
+                                                    <option value="11:30">11:30</option>
+                                                    <option value="14:00">14:00</option>
+                                                    <option value="14:30">14:30</option>
+                                                    <option value="15:00">15:00</option>
+                                                    <option value="15:30">15:30</option>
+                                                    <option value="16:00">16:00</option>
+                                                    <option value="16:30">16:30</option>
+                                                    <option value="17:00">17:00</option>
+                                                    <option value="17:30">17:30</option>
+                                                    <option value="18:00">18:00</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Observações (opcional)</label>
+                                            <textarea
+                                                id="booking-notes"
+                                                rows="3"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Alguma observação especial..."
+                                            ></textarea>
+                                        </div>
+
+                                        <div class="flex gap-4 pt-4">
+                                            <button
+                                                type="submit"
+                                                id="confirm-booking-btn"
+                                                class="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition duration-300"
+                                            >
+                                                ✅ Confirmar Agendamento
+                                            </button>
+                                            <button
+                                                type="button"
+                                                id="cancel-booking-btn"
+                                                class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -1125,6 +1753,30 @@
                     if (loginBtn) {
                         loginBtn.addEventListener('click', () => this.handleLogin());
                     }
+
+                    // Admin Login
+                    const adminLoginBtn = document.getElementById('admin-login-btn');
+                    if (adminLoginBtn) {
+                        adminLoginBtn.addEventListener('click', () => this.handleAdminLogin());
+                    }
+
+                    const adminLoginConfirm = document.getElementById('admin-login-confirm');
+                    if (adminLoginConfirm) {
+                        adminLoginConfirm.addEventListener('click', () => this.confirmAdminLogin());
+                    }
+
+                    const adminLoginCancel = document.getElementById('admin-login-cancel');
+                    if (adminLoginCancel) {
+                        adminLoginCancel.addEventListener('click', () => this.closeAdminModal());
+                    }
+
+                    // Tabs do Admin
+                    document.querySelectorAll('.tab-button').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const tabName = e.target.id.replace('tab-', '');
+                            this.switchAdminTab(tabName);
+                        });
+                    });
                     
                     // Register navigation
                     const registerClientBtn = document.getElementById('register-client-btn');
@@ -1253,6 +1905,39 @@
                             }
                         });
                     }
+
+                    // Modal de Agendamento (Clientes)
+                    const bookingModal = document.getElementById('booking-modal');
+                    const closeBookingModal = document.getElementById('close-booking-modal');
+                    const cancelBookingBtn = document.getElementById('cancel-booking-btn');
+                    const bookingForm = document.getElementById('booking-form');
+
+                    if (closeBookingModal) {
+                        closeBookingModal.addEventListener('click', () => this.closeBookingModal());
+                    }
+                    if (cancelBookingBtn) {
+                        cancelBookingBtn.addEventListener('click', () => this.closeBookingModal());
+                    }
+                    if (bookingForm) {
+                        bookingForm.addEventListener('submit', (e) => this.handleBooking(e));
+                    }
+                    if (bookingModal) {
+                        bookingModal.addEventListener('click', (e) => {
+                            if (e.target === bookingModal) {
+                                this.closeBookingModal();
+                            }
+                        });
+                    }
+
+                    // Modal Admin Login
+                    const adminLoginModal = document.getElementById('admin-login-modal');
+                    if (adminLoginModal) {
+                        adminLoginModal.addEventListener('click', (e) => {
+                            if (e.target === adminLoginModal) {
+                                this.closeAdminModal();
+                            }
+                        });
+                    }
                     
                     // Enter key support
                     document.addEventListener('keypress', (e) => {
@@ -1264,6 +1949,11 @@
                             } else if (this.currentView === 'forgot-password') {
                                 this.handleForgotPassword();
                             }
+                            
+                            // Enter no modal admin
+                            if (document.getElementById('admin-login-modal') && !document.getElementById('admin-login-modal').classList.contains('hidden')) {
+                                this.confirmAdminLogin();
+                            }
                         }
                     });
 
@@ -1272,6 +1962,8 @@
                         if (e.key === 'Escape') {
                             this.closeServiceModal();
                             this.closeCustomizeModal();
+                            this.closeBookingModal();
+                            this.closeAdminModal();
                         }
                     });
                 }
@@ -1445,13 +2137,26 @@
                 
                 async handleLogout() {
                     try {
-                        const { error } = await supabase.auth.signOut();
-                        if (error) throw error;
-                        
-                        this.currentUser = null;
-                        this.currentView = 'login';
-                        this.render();
-                        this.showMessage('Logout realizado com sucesso!', 'success');
+                        if (this.isAdmin) {
+                            // Logout administrativo
+                            this.isAdmin = false;
+                            this.currentUser = null;
+                            this.allUsers = [];
+                            this.allServices = [];
+                            this.allAppointments = [];
+                            this.currentView = 'login';
+                            this.render();
+                            this.showMessage('Logout administrativo realizado com sucesso!', 'success');
+                        } else {
+                            // Logout normal via Supabase
+                            const { error } = await supabase.auth.signOut();
+                            if (error) throw error;
+                            
+                            this.currentUser = null;
+                            this.currentView = 'login';
+                            this.render();
+                            this.showMessage('Logout realizado com sucesso!', 'success');
+                        }
                     } catch (error) {
                         console.error('❌ Erro no logout:', error);
                         this.showMessage('Erro no logout: ' + error.message, 'error');
@@ -1689,6 +2394,269 @@
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
                 }
+
+                // ========================================
+                // SISTEMA ADMINISTRATIVO
+                // ========================================
+
+                handleAdminLogin() {
+                    const modal = document.getElementById('admin-login-modal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.getElementById('admin-password').focus();
+                }
+
+                closeAdminModal() {
+                    const modal = document.getElementById('admin-login-modal');
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.getElementById('admin-password').value = '';
+                }
+
+                async confirmAdminLogin() {
+                    const password = document.getElementById('admin-password').value;
+                    const adminPassword = 'admin123'; // Senha fixa para demonstração
+                    
+                    if (password === adminPassword) {
+                        this.isAdmin = true;
+                        this.currentUser = { name: 'Administrador', user_type: 'admin' };
+                        this.currentView = 'admin-dashboard';
+                        this.closeAdminModal();
+                        
+                        // Carregar todos os dados para o admin
+                        await this.loadAdminData();
+                        this.render();
+                        this.showMessage('Login administrativo realizado com sucesso!', 'success');
+                    } else {
+                        this.showMessage('Senha de administrador incorreta!', 'error');
+                        document.getElementById('admin-password').value = '';
+                        document.getElementById('admin-password').focus();
+                    }
+                }
+
+                async loadAdminData() {
+                    try {
+                        console.log('👑 Carregando dados administrativos...');
+                        
+                        // Carregar todos os usuários
+                        const { data: allUsers } = await supabase
+                            .from('users')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        this.allUsers = allUsers || [];
+                        
+                        // Carregar todos os estabelecimentos
+                        const { data: allBusinesses } = await supabase
+                            .from('businesses')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        this.businesses = allBusinesses || [];
+                        
+                        // Carregar todos os serviços
+                        const { data: allServices } = await supabase
+                            .from('services')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        this.allServices = allServices || [];
+                        
+                        // Carregar todos os agendamentos
+                        const { data: allAppointments } = await supabase
+                            .from('appointments')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        this.allAppointments = allAppointments || [];
+                        
+                        console.log(`👑 Dados carregados: ${this.allUsers.length} usuários, ${this.businesses.length} estabelecimentos, ${this.allServices.length} serviços, ${this.allAppointments.length} agendamentos`);
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar dados administrativos:', error);
+                        this.showMessage('Erro ao carregar dados administrativos: ' + error.message, 'error');
+                    }
+                }
+
+                async toggleBusinessStatus(businessId) {
+                    try {
+                        const business = this.businesses.find(b => b.id === businessId);
+                        if (!business) return;
+
+                        const { error } = await supabase
+                            .from('businesses')
+                            .update({ active: !business.active })
+                            .eq('id', businessId);
+
+                        if (error) throw error;
+
+                        this.showMessage(
+                            `Estabelecimento ${business.active ? 'desativado' : 'ativado'} com sucesso!`, 
+                            'success'
+                        );
+
+                        await this.loadAdminData();
+                        this.render();
+
+                    } catch (error) {
+                        console.error('❌ Erro ao alterar status do estabelecimento:', error);
+                        this.showMessage('Erro ao alterar status: ' + error.message, 'error');
+                    }
+                }
+
+                viewBusinessDetails(businessId) {
+                    const business = this.businesses.find(b => b.id === businessId);
+                    const owner = this.allUsers.find(u => u.id === business?.user_id);
+                    const businessServices = this.allServices.filter(s => s.business_id === businessId);
+                    
+                    if (!business) return;
+                    
+                    alert(`Detalhes do Estabelecimento:
+                    
+Nome: ${business.name}
+Proprietário: ${owner?.name || 'N/A'} (${owner?.email || 'N/A'})
+Endereço: ${business.address || 'Não informado'}
+Telefone: ${business.phone || 'Não informado'}
+Serviços: ${businessServices.length}
+Status: ${business.active ? 'Ativo' : 'Inativo'}
+Criado em: ${new Date(business.created_at).toLocaleDateString('pt-BR')}`);
+                }
+
+                switchAdminTab(tabName) {
+                    // Remover estado ativo de todas as abas
+                    document.querySelectorAll('.tab-button').forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('text-gray-500');
+                    });
+                    
+                    // Ocultar todo conteúdo
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Ativar aba selecionada
+                    const activeTab = document.getElementById(`tab-${tabName}`);
+                    const activeContent = document.getElementById(`content-${tabName}`);
+                    
+                    if (activeTab && activeContent) {
+                        activeTab.classList.add('border-blue-500', 'text-blue-600');
+                        activeTab.classList.remove('text-gray-500');
+                        activeContent.classList.remove('hidden');
+                    }
+                }
+
+                // ========================================
+                // SISTEMA DE AGENDAMENTO (CLIENTES)
+                // ========================================
+
+                openBookingModal(serviceId, businessId) {
+                    this.selectedServiceId = serviceId;
+                    this.selectedBusinessId = businessId;
+                    
+                    const service = this.services.find(s => s.id === serviceId);
+                    const business = this.businesses.find(b => b.id === businessId);
+                    
+                    if (!service || !business) {
+                        this.showMessage('Serviço ou estabelecimento não encontrado', 'error');
+                        return;
+                    }
+                    
+                    // Preencher informações do serviço
+                    const serviceInfo = document.getElementById('service-info');
+                    serviceInfo.innerHTML = `
+                        <h4 class="font-medium text-gray-900 mb-2">${service.name}</h4>
+                        <p class="text-sm text-gray-600 mb-2">${business.name}</p>
+                        <div class="flex items-center gap-4 text-sm text-gray-500">
+                            <span>⏱️ ${service.duration_minutes} min</span>
+                            <span class="font-semibold text-green-600">R$ ${service.price}</span>
+                        </div>
+                        ${service.description ? `<p class="text-sm text-gray-600 mt-2">${service.description}</p>` : ''}
+                    `;
+                    
+                    // Definir data mínima como hoje
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('booking-date').value = today;
+                    document.getElementById('booking-date').min = today;
+                    
+                    const modal = document.getElementById('booking-modal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+
+                closeBookingModal() {
+                    const modal = document.getElementById('booking-modal');
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    
+                    // Limpar formulário
+                    document.getElementById('booking-form').reset();
+                    this.selectedServiceId = null;
+                    this.selectedBusinessId = null;
+                }
+
+                async handleBooking(e) {
+                    e.preventDefault();
+                    
+                    const date = document.getElementById('booking-date').value;
+                    const time = document.getElementById('booking-time').value;
+                    const notes = document.getElementById('booking-notes').value.trim();
+                    const confirmBtn = document.getElementById('confirm-booking-btn');
+                    
+                    if (!date || !time) {
+                        this.showMessage('Por favor, selecione data e horário', 'error');
+                        return;
+                    }
+                    
+                    if (!this.selectedServiceId || !this.selectedBusinessId) {
+                        this.showMessage('Serviço não selecionado corretamente', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        confirmBtn.textContent = 'Agendando...';
+                        confirmBtn.disabled = true;
+                        
+                        // Verificar se já existe agendamento no mesmo horário
+                        const { data: existingAppointment } = await supabase
+                            .from('appointments')
+                            .select('*')
+                            .eq('business_id', this.selectedBusinessId)
+                            .eq('appointment_date', date)
+                            .eq('appointment_time', time)
+                            .neq('status', 'cancelled')
+                            .single();
+                        
+                        if (existingAppointment) {
+                            this.showMessage('Este horário já está ocupado. Escolha outro horário.', 'error');
+                            return;
+                        }
+                        
+                        // Criar agendamento
+                        const { error } = await supabase
+                            .from('appointments')
+                            .insert([{
+                                client_id: this.currentUser.id,
+                                business_id: this.selectedBusinessId,
+                                service_id: this.selectedServiceId,
+                                appointment_date: date,
+                                appointment_time: time,
+                                status: 'pending',
+                                notes: notes || null
+                            }]);
+                        
+                        if (error) throw error;
+                        
+                        this.showMessage('Agendamento realizado com sucesso!', 'success');
+                        this.closeBookingModal();
+                        
+                        // Recarregar dados
+                        await this.loadData();
+                        this.render();
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao criar agendamento:', error);
+                        this.showMessage('Erro ao criar agendamento: ' + error.message, 'error');
+                    } finally {
+                        confirmBtn.textContent = '✅ Confirmar Agendamento';
+                        confirmBtn.disabled = false;
+                    }
+                }
             }
             
             // Inicializar aplicação
@@ -1699,6 +2667,9 @@
             window.app.editService = window.app.editService.bind(window.app);
             window.app.toggleServiceStatus = window.app.toggleServiceStatus.bind(window.app);
             window.app.deleteService = window.app.deleteService.bind(window.app);
+            window.app.openBookingModal = window.app.openBookingModal.bind(window.app);
+            window.app.toggleBusinessStatus = window.app.toggleBusinessStatus.bind(window.app);
+            window.app.viewBusinessDetails = window.app.viewBusinessDetails.bind(window.app);
         }
     </script>
 </body>
