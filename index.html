@@ -3,292 +3,891 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beauty App - Debug</title>
+    <title>Beauty App - Sistema de Agendamento</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         body { 
             margin: 0; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
         }
-        .debug-info {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            max-width: 300px;
-            z-index: 1000;
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div id="debug" class="debug-info"></div>
     <div id="root">
         <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
             <div class="text-center">
-                <div class="text-6xl mb-4">🔧</div>
-                <h1 class="text-2xl font-bold mb-4">Beauty App - Modo Debug</h1>
-                <p class="text-gray-600 mb-4">Verificando conexões...</p>
-                <div id="status" class="space-y-2"></div>
+                <div class="loading mb-4"></div>
+                <p>Carregando Beauty App...</p>
             </div>
         </div>
     </div>
     
     <script>
         // ========================================
-        // SISTEMA DE DEBUG
-        // ========================================
-        
-        const debugElement = document.getElementById('debug');
-        const statusElement = document.getElementById('status');
-        
-        function addDebug(message, type = 'info') {
-            console.log(message);
-            const colors = {
-                success: 'text-green-600',
-                error: 'text-red-600',
-                warning: 'text-yellow-600',
-                info: 'text-blue-600'
-            };
-            
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `p-2 rounded ${colors[type]} bg-white border`;
-            statusDiv.textContent = message;
-            statusElement.appendChild(statusDiv);
-            
-            debugElement.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
-            debugElement.scrollTop = debugElement.scrollHeight;
-        }
-        
-        // ========================================
         // CONFIGURAÇÃO DO SUPABASE
         // ========================================
         
-        // SUAS CREDENCIAIS (verifique se estão corretas)
+        // Suas credenciais do Supabase
         const SUPABASE_URL = 'https://ueonkhdbuzujdfyhokt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhva3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczMzY5NjY1NSwiZXhwIjoyMDQ5MjcyNjU1fQ.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhva3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczMzY5NjY1NSwiZXhwIjoyMDQ5MjcyNjU1fQ.J_Jpc3MiOjIXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhva3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczMzY5NjY1NSwiZXhwIjoyMDQ5MjcyNjU1fQ';
         
-        async function runDiagnostics() {
-            addDebug('🚀 Iniciando diagnóstico...', 'info');
-            
-            // 1. Verificar credenciais
-            addDebug(`🔑 URL: ${SUPABASE_URL}`, 'info');
-            addDebug(`🔑 Key (primeiros chars): ${SUPABASE_ANON_KEY.substring(0, 20)}...`, 'info');
-            
-            // 2. Testar conectividade básica
+        // Verificar se o Supabase foi carregado
+        if (typeof window.supabase === 'undefined') {
+            console.error('❌ Supabase não foi carregado!');
+            document.getElementById('root').innerHTML = `
+                <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Carregamento</h1>
+                        <p class="text-gray-600 mb-4">O Supabase não foi carregado corretamente.</p>
+                        <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                            Tentar Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Inicializar Supabase e tornar global
             try {
-                addDebug('🌐 Testando conectividade com Supabase...', 'info');
-                const response = await fetch(SUPABASE_URL + '/rest/v1/', {
-                    method: 'HEAD',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    }
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase conectado com sucesso!');
+                
+                // Testar conexão
+                window.supabaseClient.auth.getSession().then(result => {
+                    console.log('🔗 Teste de conexão:', result);
+                    initApp();
+                }).catch(error => {
+                    console.error('❌ Erro na conexão:', error);
+                    showConnectionError();
                 });
                 
-                if (response.ok) {
-                    addDebug('✅ Conectividade básica OK', 'success');
-                } else {
-                    addDebug(`❌ Resposta HTTP: ${response.status}`, 'error');
-                }
             } catch (error) {
-                addDebug(`❌ Erro de conectividade: ${error.message}`, 'error');
-                
-                // Verificar se é problema de DNS
-                if (error.message.includes('network') || error.message.includes('fetch')) {
-                    addDebug('🔍 Possível problema de DNS ou firewall', 'warning');
-                    addDebug('💡 Tente: 1) Verificar internet 2) Desativar VPN 3) Verificar firewall', 'warning');
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                showConnectionError();
+            }
+        }
+        
+        function showConnectionError() {
+            document.getElementById('root').innerHTML = `
+                <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Conexão</h1>
+                        <p class="text-gray-600 mb-4">Não foi possível conectar ao banco de dados.</p>
+                        <p class="text-sm text-gray-500 mb-4">Verifique suas credenciais do Supabase.</p>
+                        <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                            Tentar Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ========================================
+        // BEAUTY APP
+        // ========================================
+        
+        function initApp() {
+            // Definir supabase globalmente para facilitar acesso
+            const supabase = window.supabaseClient;
+            
+            class BeautyApp {
+                constructor() {
+                    this.currentView = 'login';
+                    this.currentUser = null;
+                    this.userType = '';
+                    this.showPassword = false;
+                    this.selectedBusiness = null;
+                    this.selectedService = null;
+                    this.editingService = null;
+                    this.currentDate = new Date().toISOString().split('T')[0];
+                    this.loading = false;
+                    this.pendingVerificationEmail = null;
+                    
+                    // Cache de dados
+                    this.businesses = [];
+                    this.services = [];
+                    this.appointments = [];
+                    
+                    this.init();
                 }
                 
-                return false;
+                async init() {
+                    console.log('🚀 Inicializando Beauty App...');
+                    const supabase = window.supabaseClient;
+                    
+                    try {
+                        // Verificar se usuário já está logado
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
+                            await this.loadUserData(session.user);
+                            this.currentView = this.currentUser?.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                        }
+                        
+                        // Escutar mudanças de autenticação
+                        supabase.auth.onAuthStateChange(async (event, session) => {
+                            console.log('🔄 Auth state changed:', event);
+                            if (event === 'SIGNED_IN') {
+                                await this.loadUserData(session.user);
+                                this.currentView = this.currentUser?.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                                this.render();
+                            } else if (event === 'SIGNED_OUT') {
+                                this.currentUser = null;
+                                this.currentView = 'login';
+                                this.render();
+                            }
+                        });
+                        
+                        await this.loadData();
+                        this.render();
+                        
+                    } catch (error) {
+                        console.error('❌ Erro na inicialização:', error);
+                        this.showMessage('Erro ao inicializar aplicação: ' + error.message, 'error');
+                    }
+                }
+                
+                async loadUserData(authUser) {
+                    const supabase = window.supabaseClient;
+                    
+                    try {
+                        const { data, error } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', authUser.id)
+                            .single();
+                        
+                        if (error) {
+                            console.error('Erro ao carregar usuário:', error);
+                            // Se o usuário não existe na tabela users, criar
+                            if (error.code === 'PGRST116') {
+                                await this.createUserRecord(authUser);
+                                return;
+                            }
+                            throw error;
+                        }
+                        this.currentUser = data;
+                        console.log('👤 Usuário carregado:', data);
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar dados do usuário:', error);
+                    }
+                }
+                
+                async createUserRecord(authUser) {
+                    const supabase = window.supabaseClient;
+                    
+                    try {
+                        const userData = authUser.user_metadata || {};
+                        const { data, error } = await supabase
+                            .from('users')
+                            .insert([{
+                                id: authUser.id,
+                                email: authUser.email,
+                                user_type: userData.user_type || 'client',
+                                name: userData.name || '',
+                                phone: userData.phone || '',
+                                address: userData.address || '',
+                                email_verified: authUser.email_confirmed_at ? true : false
+                            }])
+                            .select()
+                            .single();
+                        
+                        if (error) throw error;
+                        this.currentUser = data;
+                        console.log('👤 Usuário criado:', data);
+                    } catch (error) {
+                        console.error('❌ Erro ao criar registro do usuário:', error);
+                    }
+                }
+                
+                async loadData() {
+                    const supabase = window.supabaseClient;
+                    
+                    try {
+                        // Carregar estabelecimentos
+                        const { data: businessData, error: businessError } = await supabase
+                            .from('businesses')
+                            .select('*')
+                            .order('name');
+                        
+                        if (businessError && businessError.code !== 'PGRST116') {
+                            console.error('Erro ao carregar estabelecimentos:', businessError);
+                        } else {
+                            this.businesses = businessData || [];
+                        }
+                        
+                        // Carregar serviços
+                        const { data: serviceData, error: serviceError } = await supabase
+                            .from('services')
+                            .select('*')
+                            .eq('active', true)
+                            .order('name');
+                        
+                        if (serviceError && serviceError.code !== 'PGRST116') {
+                            console.error('Erro ao carregar serviços:', serviceError);
+                        } else {
+                            this.services = serviceData || [];
+                        }
+                        
+                        // Carregar agendamentos se usuário logado
+                        if (this.currentUser) {
+                            await this.loadAppointments();
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar dados:', error);
+                    }
+                }
+                
+                async loadAppointments() {
+                    const supabase = window.supabaseClient;
+                    
+                    try {
+                        let query = supabase.from('appointments').select(`
+                            *,
+                            client:users!appointments_client_id_fkey(name, phone),
+                            business:businesses!appointments_business_id_fkey(name),
+                            service:services!appointments_service_id_fkey(name)
+                        `);
+                        
+                        if (this.currentUser.user_type === 'business') {
+                            // Para empresas, buscar por business_id
+                            const { data: businessData } = await supabase
+                                .from('businesses')
+                                .select('id')
+                                .eq('user_id', this.currentUser.id)
+                                .single();
+                            
+                            if (businessData) {
+                                query = query.eq('business_id', businessData.id);
+                            }
+                        } else {
+                            query = query.eq('client_id', this.currentUser.id);
+                        }
+                        
+                        const { data, error } = await query.order('appointment_date', { ascending: false });
+                        
+                        if (error && error.code !== 'PGRST116') {
+                            console.error('Erro ao carregar agendamentos:', error);
+                        } else {
+                            this.appointments = data || [];
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao carregar agendamentos:', error);
+                    }
+                }
+                
+                showMessage(message, type = 'info') {
+                    const colors = {
+                        success: 'bg-green-100 text-green-800 border-green-200',
+                        error: 'bg-red-100 text-red-800 border-red-200',
+                        info: 'bg-blue-100 text-blue-800 border-blue-200',
+                        warning: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    };
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg border ${colors[type]} z-50 fade-in max-w-md`;
+                    messageDiv.innerHTML = `
+                        <div class="flex items-start gap-2">
+                            <span class="flex-1">${message}</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="text-lg font-bold">×</button>
+                        </div>
+                    `;
+                    document.body.appendChild(messageDiv);
+                    
+                    setTimeout(() => {
+                        if (messageDiv.parentElement) {
+                            messageDiv.remove();
+                        }
+                    }, 5000);
+                }
+                
+                render() {
+                    const root = document.getElementById('root');
+                    
+                    switch(this.currentView) {
+                        case 'login':
+                            root.innerHTML = this.renderLogin();
+                            break;
+                        case 'register':
+                            root.innerHTML = this.renderRegister();
+                            break;
+                        case 'forgot-password':
+                            root.innerHTML = this.renderForgotPassword();
+                            break;
+                        case 'email-sent':
+                            root.innerHTML = this.renderEmailSent();
+                            break;
+                        case 'business-dashboard':
+                            root.innerHTML = this.renderBusinessDashboard();
+                            break;
+                        case 'client-dashboard':
+                            root.innerHTML = this.renderClientDashboard();
+                            break;
+                        default:
+                            root.innerHTML = this.renderLogin();
+                    }
+                    
+                    this.attachEvents();
+                }
+                
+                renderLogin() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Beauty App</h1>
+                                    <p class="text-gray-600">Sistema de agendamento para salões de beleza</p>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="seu@email.com"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="Sua senha"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="login-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                    >
+                                        Entrar
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="forgot-password-btn"
+                                        class="text-pink-600 hover:text-pink-700 font-medium text-sm"
+                                    >
+                                        Esqueceu sua senha?
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <p class="text-gray-600 mb-4">Não tem uma conta?</p>
+                                    <div class="space-y-3">
+                                        <button
+                                            id="register-client-btn"
+                                            class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                                        >
+                                            👤 Cadastrar como Cliente
+                                        </button>
+                                        <button
+                                            id="register-business-btn"
+                                            class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300"
+                                        >
+                                            🏢 Cadastrar como Empresa
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <p class="text-xs text-gray-500">
+                                        Versão de teste - Sistema conectado ao Supabase
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderRegister() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                                        ${this.userType === 'business' ? 'Cadastro de Empresa' : 'Cadastro de Cliente'}
+                                    </h1>
+                                    <p class="text-gray-600">Preencha os dados abaixo</p>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ${this.userType === 'business' ? 'Nome da Empresa' : 'Nome Completo'}
+                                        </label>
+                                        <input
+                                            id="reg-name"
+                                            type="text"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="reg-email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                                        <input
+                                            id="reg-phone"
+                                            type="tel"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="(48) 99999-9999"
+                                        />
+                                    </div>
+
+                                    ${this.userType === 'business' ? `
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
+                                        <input
+                                            id="reg-address"
+                                            type="text"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    ` : ''}
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                        <input
+                                            id="reg-password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            minlength="6"
+                                        />
+                                        <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Senha</label>
+                                        <input
+                                            id="reg-confirm-password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="register-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                    >
+                                        Cadastrar
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="back-to-login"
+                                        class="text-pink-600 hover:text-pink-700 font-medium"
+                                    >
+                                        Voltar ao Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderForgotPassword() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Recuperar Senha</h1>
+                                    <p class="text-gray-600">Digite seu email para receber as instruções</p>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="forgot-email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            placeholder="seu@email.com"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="send-reset-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                    >
+                                        Enviar Instruções
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="back-to-login-forgot"
+                                        class="text-pink-600 hover:text-pink-700 font-medium"
+                                    >
+                                        Voltar ao Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderEmailSent() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in text-center">
+                                <div class="text-6xl mb-4">📧</div>
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Email Enviado!</h1>
+                                <p class="text-gray-600 mb-6">
+                                    Verifique sua caixa de entrada${this.pendingVerificationEmail ? ` (${this.pendingVerificationEmail})` : ''} 
+                                    e clique no link para verificar sua conta.
+                                </p>
+                                <p class="text-sm text-gray-500 mb-6">
+                                    Não encontrou o email? Verifique a pasta de spam.
+                                </p>
+                                <button
+                                    id="back-to-login-email"
+                                    class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition duration-300"
+                                >
+                                    Voltar ao Login
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderBusinessDashboard() {
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-white shadow-sm border-b">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Sistema Conectado!</h2>
+                                    <p class="text-gray-600 mb-4">
+                                        Parabéns! Seu Beauty App está funcionando com Supabase.
+                                    </p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="bg-green-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-green-800">✅ Conectado</h3>
+                                            <p class="text-sm text-green-600">Banco de dados Supabase ativo</p>
+                                        </div>
+                                        <div class="bg-blue-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-blue-800">📧 Emails</h3>
+                                            <p class="text-sm text-blue-600">Sistema de verificação funcionando</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                renderClientDashboard() {
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-white shadow-sm border-b">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Bem-vindo!</h2>
+                                    <p class="text-gray-600">
+                                        Seu cadastro foi realizado com sucesso no Beauty App.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Event handlers
+                attachEvents() {
+                    // Login
+                    const loginBtn = document.getElementById('login-btn');
+                    if (loginBtn) {
+                        loginBtn.addEventListener('click', () => this.handleLogin());
+                    }
+                    
+                    // Register navigation
+                    const registerClientBtn = document.getElementById('register-client-btn');
+                    if (registerClientBtn) {
+                        registerClientBtn.addEventListener('click', () => {
+                            this.userType = 'client';
+                            this.currentView = 'register';
+                            this.render();
+                        });
+                    }
+                    
+                    const registerBusinessBtn = document.getElementById('register-business-btn');
+                    if (registerBusinessBtn) {
+                        registerBusinessBtn.addEventListener('click', () => {
+                            this.userType = 'business';
+                            this.currentView = 'register';
+                            this.render();
+                        });
+                    }
+                    
+                    // Register
+                    const registerBtn = document.getElementById('register-btn');
+                    if (registerBtn) {
+                        registerBtn.addEventListener('click', () => this.handleRegister());
+                    }
+                    
+                    // Back to login
+                    const backToLogin = document.getElementById('back-to-login');
+                    if (backToLogin) {
+                        backToLogin.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    const backToLoginForgot = document.getElementById('back-to-login-forgot');
+                    if (backToLoginForgot) {
+                        backToLoginForgot.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    const backToLoginEmail = document.getElementById('back-to-login-email');
+                    if (backToLoginEmail) {
+                        backToLoginEmail.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    // Forgot password
+                    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+                    if (forgotPasswordBtn) {
+                        forgotPasswordBtn.addEventListener('click', () => {
+                            this.currentView = 'forgot-password';
+                            this.render();
+                        });
+                    }
+                    
+                    const sendResetBtn = document.getElementById('send-reset-btn');
+                    if (sendResetBtn) {
+                        sendResetBtn.addEventListener('click', () => this.handleForgotPassword());
+                    }
+                    
+                    // Logout
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', () => this.handleLogout());
+                    }
+                    
+                    // Enter key support
+                    document.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter' && !this.loading) {
+                            if (this.currentView === 'login') {
+                                this.handleLogin();
+                            } else if (this.currentView === 'register') {
+                                this.handleRegister();
+                            } else if (this.currentView === 'forgot-password') {
+                                this.handleForgotPassword();
+                            }
+                        }
+                    });
+                }
+                
+                // Authentication methods
+                async handleLogin() {
+                    const email = document.getElementById('email').value.trim();
+                    const password = document.getElementById('password').value;
+                    const supabase = window.supabaseClient;
+                    
+                    if (!email || !password) {
+                        this.showMessage('Por favor, preencha email e senha', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('🔐 Tentando login...');
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: password
+                        });
+                        
+                        if (error) throw error;
+                        
+                        console.log('✅ Login realizado:', data);
+                        this.showMessage('Login realizado com sucesso!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro no login:', error);
+                        this.showMessage('Erro no login: ' + error.message, 'error');
+                    }
+                }
+                
+                async handleRegister() {
+                    const name = document.getElementById('reg-name').value.trim();
+                    const email = document.getElementById('reg-email').value.trim();
+                    const phone = document.getElementById('reg-phone').value.trim();
+                    const password = document.getElementById('reg-password').value;
+                    const confirmPassword = document.getElementById('reg-confirm-password').value;
+                    const address = document.getElementById('reg-address')?.value.trim() || '';
+                    const supabase = window.supabaseClient;
+                    
+                    if (!name || !email || !phone || !password || !confirmPassword) {
+                        this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
+                        return;
+                    }
+                    
+                    if (password.length < 6) {
+                        this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        this.showMessage('As senhas não coincidem!', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('📝 Registrando usuário...');
+                        const { data, error } = await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: {
+                                data: {
+                                    name: name,
+                                    user_type: this.userType,
+                                    phone: phone,
+                                    address: address
+                                }
+                            }
+                        });
+                        
+                        if (error) throw error;
+                        
+                        console.log('✅ Usuário registrado:', data);
+                        this.pendingVerificationEmail = email;
+                        this.currentView = 'email-sent';
+                        this.render();
+                        this.showMessage('Cadastro realizado! Verifique seu email.', 'success');
+                        
+                    } catch (error) {
+                        console.error('❌ Erro no cadastro:', error);
+                        this.showMessage('Erro no cadastro: ' + error.message, 'error');
+                    }
+                }
+                
+                async handleForgotPassword() {
+                    const email = document.getElementById('forgot-email').value.trim();
+                    const supabase = window.supabaseClient;
+                    
+                    if (!email) {
+                        this.showMessage('Por favor, digite seu email', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('🔄 Enviando email de recuperação...');
+                        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                            redirectTo: window.location.origin + window.location.pathname
+                        });
+                        
+                        if (error) throw error;
+                        
+                        this.pendingVerificationEmail = email;
+                        this.currentView = 'email-sent';
+                        this.render();
+                        this.showMessage('Email de recuperação enviado!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro ao enviar email:', error);
+                        this.showMessage('Erro ao enviar email: ' + error.message, 'error');
+                    }
+                }
+                
+                async handleLogout() {
+                    const supabase = window.supabaseClient;
+                    
+                    try {
+                        const { error } = await supabase.auth.signOut();
+                        if (error) throw error;
+                        
+                        this.currentUser = null;
+                        this.currentView = 'login';
+                        this.render();
+                        this.showMessage('Logout realizado com sucesso!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro no logout:', error);
+                        this.showMessage('Erro no logout: ' + error.message, 'error');
+                    }
+                }
             }
             
-            // 3. Testar carregamento do Supabase JS
-            try {
-                addDebug('📦 Carregando Supabase JS...', 'info');
-                
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-                script.onload = () => {
-                    addDebug('✅ Supabase JS carregado', 'success');
-                    testSupabaseConnection();
-                };
-                script.onerror = () => {
-                    addDebug('❌ Falha ao carregar Supabase JS', 'error');
-                    showManualOptions();
-                };
-                document.head.appendChild(script);
-                
-            } catch (error) {
-                addDebug(`❌ Erro ao carregar script: ${error.message}`, 'error');
-                showManualOptions();
-            }
+            // Inicializar aplicação
+            window.app = new BeautyApp();
         }
-        
-        async function testSupabaseConnection() {
-            try {
-                addDebug('🔗 Inicializando cliente Supabase...', 'info');
-                
-                if (typeof window.supabase === 'undefined') {
-                    throw new Error('Supabase não carregado');
-                }
-                
-                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                addDebug('✅ Cliente Supabase criado', 'success');
-                
-                // Testar conexão básica
-                const { data, error } = await supabase.auth.getSession();
-                if (error) {
-                    throw error;
-                }
-                
-                addDebug('✅ Conexão com Auth funcionando', 'success');
-                
-                // Testar acesso ao banco
-                const { data: testData, error: dbError } = await supabase
-                    .from('users')
-                    .select('count')
-                    .limit(1);
-                
-                if (dbError && dbError.code !== 'PGRST116') {
-                    throw dbError;
-                }
-                
-                addDebug('✅ Conexão com Database funcionando', 'success');
-                addDebug('🎉 Todos os testes passaram!', 'success');
-                
-                // Mostrar opções para continuar
-                showSuccessOptions();
-                
-            } catch (error) {
-                addDebug(`❌ Erro na conexão: ${error.message}`, 'error');
-                
-                if (error.message.includes('Invalid API key')) {
-                    addDebug('🔑 Problema com a chave API', 'error');
-                    addDebug('💡 Verifique se a ANON KEY está correta no Supabase', 'warning');
-                } else if (error.message.includes('Invalid URL')) {
-                    addDebug('🌐 Problema com a URL', 'error');
-                    addDebug('💡 Verifique se a URL do projeto está correta', 'warning');
-                }
-                
-                showManualOptions();
-            }
-        }
-        
-        function showSuccessOptions() {
-            document.getElementById('root').innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-2xl text-center">
-                        <div class="text-6xl mb-6">🎉</div>
-                        <h1 class="text-3xl font-bold text-green-600 mb-4">Tudo Funcionando!</h1>
-                        <p class="text-gray-600 mb-8">Supabase conectado com sucesso. Sistema pronto para usar!</p>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div class="bg-green-50 p-4 rounded-lg">
-                                <h3 class="font-semibold text-green-800">✅ Conectividade</h3>
-                                <p class="text-sm text-green-600">Internet e DNS OK</p>
-                            </div>
-                            <div class="bg-blue-50 p-4 rounded-lg">
-                                <h3 class="font-semibold text-blue-800">✅ Supabase</h3>
-                                <p class="text-sm text-blue-600">Auth e Database OK</p>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <button 
-                                onclick="loadFullApp()" 
-                                class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition duration-300 font-semibold"
-                            >
-                                🚀 Carregar Beauty App Completo
-                            </button>
-                            
-                            <button 
-                                onclick="runDiagnostics()" 
-                                class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300"
-                            >
-                                🔄 Executar Diagnóstico Novamente
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function showManualOptions() {
-            document.getElementById('root').innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-2xl">
-                        <div class="text-center mb-6">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h1 class="text-3xl font-bold text-red-600 mb-2">Problemas Detectados</h1>
-                            <p class="text-gray-600">Há problemas de conectividade ou configuração</p>
-                        </div>
-                        
-                        <div class="space-y-4 mb-6">
-                            <h3 class="font-semibold text-gray-800">🔧 Soluções Possíveis:</h3>
-                            
-                            <div class="bg-yellow-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-yellow-800">1. Verificar Credenciais</h4>
-                                <p class="text-sm text-yellow-700">Vá ao Supabase → Settings → API</p>
-                                <p class="text-sm text-yellow-700">Copie novamente URL e ANON KEY</p>
-                            </div>
-                            
-                            <div class="bg-blue-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-blue-800">2. Verificar Conectividade</h4>
-                                <p class="text-sm text-blue-700">Desative VPN, firewall ou proxy</p>
-                                <p class="text-sm text-blue-700">Teste em navegador anônimo</p>
-                            </div>
-                            
-                            <div class="bg-purple-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-purple-800">3. RLS no Supabase</h4>
-                                <p class="text-sm text-purple-700">Authentication → Settings</p>
-                                <p class="text-sm text-purple-700">Verificar se signup está habilitado</p>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3">
-                            <button 
-                                onclick="runDiagnostics()" 
-                                class="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition duration-300"
-                            >
-                                🔄 Tentar Novamente
-                            </button>
-                            
-                            <button 
-                                onclick="loadBasicApp()" 
-                                class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300"
-                            >
-                                📱 Carregar Versão Offline (Sem Banco)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function loadFullApp() {
-            // Aqui carregaria o Beauty App completo
-            alert('✅ Redirecionando para o sistema completo...\n\nAgora vamos substituir por sua versão funcional!');
-        }
-        
-        function loadBasicApp() {
-            // Carregar versão sem banco
-            alert('📱 Carregando versão offline...\n\nEsta versão funcionará sem banco de dados.');
-        }
-        
-        // ========================================
-        // INICIALIZAR DIAGNÓSTICO
-        // ========================================
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(runDiagnostics, 1000);
-        });
     </script>
 </body>
 </html>
