@@ -59,6 +59,8 @@
     </div>
     
     <script>
+        console.log('🚀 Iniciando Beauty App...');
+        
         // ========================================
         // CONFIGURAÇÃO DO SUPABASE
         // ========================================
@@ -68,31 +70,13 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhvb2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MzI3ODQsImV4cCI6MjA2NTAwODc4NH0.3zX18Z-Gz3tZ4YQti0wuhtStxPIc8jN8m_lrz_W2ikE'; // ⚠️ SUBSTITUA PELA CHAVE CORRETA!
         
         // Verificar se as credenciais foram configuradas
-        if (SUPABASE_ANON_KEY === 'SUA_CHAVE_ANON_CORRETA_AQUI') {
+        if (SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhvb2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MzI3ODQsImV4cCI6MjA2NTAwODc4NH0.3zX18Z-Gz3tZ4YQti0wuhtStxPIc8jN8m_lrz_W2ikE') {
             showConfigurationError();
         } else if (typeof window.supabase === 'undefined') {
-            // Verificar se o Supabase foi carregado
             console.error('❌ Supabase não foi carregado!');
             showLibraryError();
         } else {
-            // Inicializar Supabase se tudo estiver OK
             initializeSupabase();
-        }
-        
-        function initializeSupabase() {
-        
-        function initializeSupabase() {
-            try {
-                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase conectado com sucesso!');
-                
-                // Testar conexão básica
-                testConnection();
-                
-            } catch (error) {
-                console.error('❌ Erro ao inicializar Supabase:', error);
-                showConnectionError(error);
-            }
         }
         
         function showConfigurationError() {
@@ -171,6 +155,17 @@
             `;
         }
         
+        function initializeSupabase() {
+            try {
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase conectado com sucesso!');
+                testConnection();
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+                showConnectionError(error);
+            }
+        }
+        
         async function testConnection() {
             try {
                 const { data, error } = await window.supabaseClient.auth.getSession();
@@ -197,11 +192,6 @@
                     this.currentView = 'login';
                     this.currentUser = null;
                     this.userType = '';
-                    this.showPassword = false;
-                    this.selectedBusiness = null;
-                    this.selectedService = null;
-                    this.editingService = null;
-                    this.currentDate = new Date().toISOString().split('T')[0];
                     this.loading = false;
                     this.pendingVerificationEmail = null;
                     
@@ -240,8 +230,6 @@
                                 this.currentUser = null;
                                 this.currentView = 'login';
                                 this.render();
-                            } else if (event === 'TOKEN_REFRESHED') {
-                                console.log('🔄 Token renovado');
                             }
                         });
                         
@@ -268,24 +256,9 @@
                                     <strong>Código:</strong> ${error.code || 'N/A'}
                                 </div>
                                 
-                                <div class="mt-4 space-y-2 text-sm">
-                                    <p><strong>Possíveis soluções:</strong></p>
-                                    <ul class="list-disc list-inside space-y-1 text-gray-600">
-                                        <li>Verifique se as tabelas foram criadas no Supabase</li>
-                                        <li>Confirme se as políticas RLS estão ativas</li>
-                                        <li>Verifique a configuração de autenticação</li>
-                                        <li>Teste a conexão com o banco</li>
-                                    </ul>
-                                </div>
-                                
-                                <div class="mt-6 flex gap-2">
-                                    <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
-                                        Recarregar
-                                    </button>
-                                    <button onclick="window.location.href='https://supabase.com/dashboard'" class="bg-gray-500 text-white px-4 py-2 rounded">
-                                        Abrir Supabase
-                                    </button>
-                                </div>
+                                <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                                    Recarregar
+                                </button>
                             </div>
                         </div>
                     `;
@@ -300,8 +273,6 @@
                             .single();
                         
                         if (error) {
-                            console.error('Erro ao carregar usuário:', error);
-                            // Se o usuário não existe na tabela users, criar
                             if (error.code === 'PGRST116') {
                                 console.log('📝 Criando registro de usuário...');
                                 await this.createUserRecord(authUser);
@@ -338,7 +309,6 @@
                         this.currentUser = data;
                         console.log('👤 Usuário criado:', data);
                         
-                        // Se é um negócio, criar registro na tabela businesses
                         if (userData.user_type === 'business' && userData.name) {
                             await this.createBusinessRecord(data);
                         }
@@ -372,35 +342,24 @@
                 
                 async loadData() {
                     try {
-                        // Carregar estabelecimentos
-                        const { data: businessData, error: businessError } = await supabase
+                        const { data: businessData } = await supabase
                             .from('businesses')
                             .select('*')
                             .eq('active', true)
                             .order('name');
                         
-                        if (businessError && businessError.code !== 'PGRST116') {
-                            console.error('Erro ao carregar estabelecimentos:', businessError);
-                        } else {
-                            this.businesses = businessData || [];
-                            console.log(`📍 ${this.businesses.length} estabelecimentos carregados`);
-                        }
+                        this.businesses = businessData || [];
+                        console.log(`📍 ${this.businesses.length} estabelecimentos carregados`);
                         
-                        // Carregar serviços
-                        const { data: serviceData, error: serviceError } = await supabase
+                        const { data: serviceData } = await supabase
                             .from('services')
                             .select('*')
                             .eq('active', true)
                             .order('name');
                         
-                        if (serviceError && serviceError.code !== 'PGRST116') {
-                            console.error('Erro ao carregar serviços:', serviceError);
-                        } else {
-                            this.services = serviceData || [];
-                            console.log(`💼 ${this.services.length} serviços carregados`);
-                        }
+                        this.services = serviceData || [];
+                        console.log(`💼 ${this.services.length} serviços carregados`);
                         
-                        // Carregar agendamentos se usuário logado
                         if (this.currentUser) {
                             await this.loadAppointments();
                         }
@@ -412,15 +371,9 @@
                 
                 async loadAppointments() {
                     try {
-                        let query = supabase.from('appointments').select(`
-                            *,
-                            client:users!appointments_client_id_fkey(name, phone),
-                            business:businesses!appointments_business_id_fkey(name),
-                            service:services!appointments_service_id_fkey(name)
-                        `);
+                        let query = supabase.from('appointments').select('*');
                         
                         if (this.currentUser.user_type === 'business') {
-                            // Para empresas, buscar por business_id
                             const { data: businessData } = await supabase
                                 .from('businesses')
                                 .select('id')
@@ -434,14 +387,9 @@
                             query = query.eq('client_id', this.currentUser.id);
                         }
                         
-                        const { data, error } = await query.order('appointment_date', { ascending: false });
-                        
-                        if (error && error.code !== 'PGRST116') {
-                            console.error('Erro ao carregar agendamentos:', error);
-                        } else {
-                            this.appointments = data || [];
-                            console.log(`📅 ${this.appointments.length} agendamentos carregados`);
-                        }
+                        const { data } = await query.order('appointment_date', { ascending: false });
+                        this.appointments = data || [];
+                        console.log(`📅 ${this.appointments.length} agendamentos carregados`);
                     } catch (error) {
                         console.error('❌ Erro ao carregar agendamentos:', error);
                     }
@@ -570,7 +518,7 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        ✅ Sistema conectado ao Supabase - v2.0
+                                        ✅ Sistema conectado ao Supabase - v2.1
                                     </p>
                                 </div>
                             </div>
@@ -809,24 +757,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div class="mt-6 bg-white rounded-lg shadow p-6">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">⚡ Próximos Passos</h2>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div class="border border-gray-200 rounded-lg p-4">
-                                            <h3 class="font-semibold text-gray-800 mb-2">1. Gerenciar Serviços</h3>
-                                            <p class="text-sm text-gray-600">Adicione e configure os serviços do seu salão</p>
-                                        </div>
-                                        <div class="border border-gray-200 rounded-lg p-4">
-                                            <h3 class="font-semibold text-gray-800 mb-2">2. Horários</h3>
-                                            <p class="text-sm text-gray-600">Configure os horários de funcionamento</p>
-                                        </div>
-                                        <div class="border border-gray-200 rounded-lg p-4">
-                                            <h3 class="font-semibold text-gray-800 mb-2">3. Agendamentos</h3>
-                                            <p class="text-sm text-gray-600">Gerencie os agendamentos dos clientes</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     `;
@@ -881,30 +811,11 @@
                                         `}
                                     </div>
                                 </div>
-                                
-                                <div class="mt-6 bg-white rounded-lg shadow p-6">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">⚡ Próximos Passos</h2>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div class="border border-gray-200 rounded-lg p-4">
-                                            <h3 class="font-semibold text-gray-800 mb-2">1. Explorar Salões</h3>
-                                            <p class="text-sm text-gray-600">Encontre salões próximos a você</p>
-                                        </div>
-                                        <div class="border border-gray-200 rounded-lg p-4">
-                                            <h3 class="font-semibold text-gray-800 mb-2">2. Agendar Serviço</h3>
-                                            <p class="text-sm text-gray-600">Escolha e agende seu serviço favorito</p>
-                                        </div>
-                                        <div class="border border-gray-200 rounded-lg p-4">
-                                            <h3 class="font-semibold text-gray-800 mb-2">3. Acompanhar</h3>
-                                            <p class="text-sm text-gray-600">Gerencie seus agendamentos</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     `;
                 }
                 
-                // Event handlers
                 attachEvents() {
                     // Login
                     const loginBtn = document.getElementById('login-btn');
@@ -996,7 +907,6 @@
                     });
                 }
                 
-                // Authentication methods
                 async handleLogin() {
                     const email = document.getElementById('email').value.trim();
                     const password = document.getElementById('password').value;
@@ -1007,7 +917,6 @@
                         return;
                     }
                     
-                    // Validação básica de email
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                     if (!emailRegex.test(email)) {
                         this.showMessage('Por favor, digite um email válido', 'error');
@@ -1057,7 +966,6 @@
                     const address = document.getElementById('reg-address')?.value.trim() || '';
                     const registerBtn = document.getElementById('register-btn');
                     
-                    // Validações
                     if (!name || !email || !phone || !password || !confirmPassword) {
                         this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
                         return;
