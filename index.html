@@ -205,6 +205,13 @@
                     this.selectedServiceId = null;
                     this.selectedBusinessId = null;
                     
+                    // Configurações do Admin (armazenadas localmente para demonstração)
+                    this.adminConfig = {
+                        password: localStorage.getItem('admin_password') || 'admin123',
+                        email: localStorage.getItem('admin_email') || '',
+                        firstLogin: localStorage.getItem('admin_first_login') !== 'false'
+                    };
+                    
                     // Cache de dados
                     this.businesses = [];
                     this.services = [];
@@ -497,15 +504,23 @@
                                             </div>
                                             <div>
                                                 <h1 class="text-2xl font-bold text-white">Dashboard Administrativo</h1>
-                                                <p class="text-sm text-gray-300">Controle total do Beauty App</p>
+                                                <p class="text-sm text-gray-300">Controle total do Beauty App - ${this.currentUser?.email || 'Admin'}</p>
                                             </div>
                                         </div>
-                                        <button
-                                            id="logout-btn"
-                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
-                                        >
-                                            Sair
-                                        </button>
+                                        <div class="flex items-center gap-3">
+                                            <button
+                                                id="admin-settings-btn"
+                                                class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-300 flex items-center gap-2"
+                                            >
+                                                ⚙️ Configurações
+                                            </button>
+                                            <button
+                                                id="logout-btn"
+                                                class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                            >
+                                                Sair
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </header>
@@ -895,27 +910,86 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        ✅ Beauty App v4.0 - Sistema Completo com Isolamento e Super Admin
+                                        ✅ Beauty App v4.1 - Isolamento Completo + Admin Avançado + Agendamentos Detalhados
                                     </p>
                                 </div>
                             </div>
 
                             <!-- Modal de Login Admin -->
                             <div id="admin-login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-                                <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4">
+                                <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
                                     <div class="text-center mb-6">
-                                        <h2 class="text-2xl font-bold text-gray-900">👑 Login Administrativo</h2>
-                                        <p class="text-gray-600 mt-2">Acesso completo ao sistema</p>
+                                        <h2 id="admin-modal-title" class="text-2xl font-bold text-gray-900">👑 Login Administrativo</h2>
+                                        <p id="admin-modal-subtitle" class="text-gray-600 mt-2">Acesso completo ao sistema</p>
                                     </div>
 
-                                    <div class="space-y-4">
+                                    <!-- Configuração Inicial -->
+                                    <div id="admin-first-setup" class="space-y-4" style="display: none;">
+                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                            <h3 class="text-sm font-medium text-blue-800 mb-2">🔧 Configuração Inicial</h3>
+                                            <p class="text-sm text-blue-700">Configure suas credenciais de administrador pela primeira vez.</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Email do Administrador</label>
+                                            <input
+                                                id="admin-email-setup"
+                                                type="email"
+                                                required
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="admin@exemplo.com"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nova Senha de Administrador</label>
+                                            <input
+                                                id="admin-new-password"
+                                                type="password"
+                                                required
+                                                minlength="6"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Mínimo 6 caracteres"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nova Senha</label>
+                                            <input
+                                                id="admin-confirm-password"
+                                                type="password"
+                                                required
+                                                minlength="6"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Digite a senha novamente"
+                                            />
+                                        </div>
+
+                                        <div class="flex gap-3">
+                                            <button
+                                                id="admin-setup-confirm"
+                                                class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300"
+                                            >
+                                                ⚙️ Configurar Admin
+                                            </button>
+                                            <button
+                                                id="admin-setup-cancel"
+                                                class="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Login Normal -->
+                                    <div id="admin-normal-login" class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Senha de Administrador</label>
                                             <input
                                                 id="admin-password"
                                                 type="password"
                                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                                placeholder="Digite a senha master"
+                                                placeholder="Digite a senha de administrador"
                                             />
                                         </div>
 
@@ -933,10 +1007,77 @@
                                                 Cancelar
                                             </button>
                                         </div>
+
+                                        <div class="text-center">
+                                            <button
+                                                id="admin-change-password-btn"
+                                                class="text-sm text-gray-600 hover:text-gray-800 underline"
+                                            >
+                                                Alterar senha de administrador
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Alteração de Senha -->
+                                    <div id="admin-change-password" class="space-y-4" style="display: none;">
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                            <h3 class="text-sm font-medium text-yellow-800 mb-2">🔐 Alteração de Senha</h3>
+                                            <p class="text-sm text-yellow-700">Digite a senha atual e defina uma nova senha.</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha Atual</label>
+                                            <input
+                                                id="admin-current-password"
+                                                type="password"
+                                                required
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                                placeholder="Senha atual"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nova Senha</label>
+                                            <input
+                                                id="admin-new-password-change"
+                                                type="password"
+                                                required
+                                                minlength="6"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                                placeholder="Nova senha (mín. 6 caracteres)"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nova Senha</label>
+                                            <input
+                                                id="admin-confirm-new-password"
+                                                type="password"
+                                                required
+                                                minlength="6"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                                placeholder="Confirme a nova senha"
+                                            />
+                                        </div>
+
+                                        <div class="flex gap-3">
+                                            <button
+                                                id="admin-password-change-confirm"
+                                                class="flex-1 bg-yellow-600 text-white py-3 rounded-lg hover:bg-yellow-700 transition duration-300"
+                                            >
+                                                🔐 Alterar Senha
+                                            </button>
+                                            <button
+                                                id="admin-password-change-cancel"
+                                                class="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div class="mt-4 text-xs text-gray-500 text-center">
-                                        Senha padrão: <code class="bg-gray-100 px-1 rounded">admin123</code>
+                                        <span id="admin-info-text">Sistema de administração seguro</span>
                                     </div>
                                 </div>
                             </div>
@@ -1598,15 +1739,16 @@
                                             </div>
                                             <div class="p-6">
                                                 ${this.appointments.length > 0 ? `
-                                                    <div class="space-y-3">
-                                                        ${this.appointments.slice(0, 3).map(appointment => `
-                                                            <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                                                                <div class="w-2 h-8 bg-blue-500 rounded"></div>
-                                                                <div class="flex-1">
-                                                                    <p class="font-medium text-gray-900">${appointment.service?.name || 'Serviço'}</p>
-                                                                    <p class="text-sm text-gray-600">${appointment.business?.name || 'Estabelecimento'}</p>
-                                                                    <p class="text-xs text-gray-500">${appointment.appointment_date} às ${appointment.appointment_time}</p>
-                                                                    <span class="inline-block mt-1 px-2 py-1 text-xs rounded-full ${
+                                                    <div class="space-y-4">
+                                                        ${this.appointments.slice(0, 5).map(appointment => `
+                                                            <div class="border border-gray-200 rounded-lg p-4">
+                                                                <div class="flex items-start justify-between mb-3">
+                                                                    <div class="flex-1">
+                                                                        <h4 class="font-medium text-gray-900">${appointment.service?.name || 'Serviço não especificado'}</h4>
+                                                                        <p class="text-sm text-gray-600">${appointment.business?.name || 'Estabelecimento não especificado'}</p>
+                                                                        ${appointment.business?.address ? `<p class="text-xs text-gray-500">📍 ${appointment.business.address}</p>` : ''}
+                                                                    </div>
+                                                                    <span class="inline-block px-2 py-1 text-xs rounded-full ${
                                                                         appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                                                                         appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                                         appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
@@ -1617,17 +1759,67 @@
                                                                         appointment.status === 'cancelled' ? 'Cancelado' : 'Concluído'}
                                                                     </span>
                                                                 </div>
+                                                                
+                                                                <div class="bg-gray-50 rounded-lg p-3">
+                                                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                                                        <div>
+                                                                            <span class="text-gray-500">📅 Data:</span>
+                                                                            <span class="font-medium ml-1">${new Date(appointment.appointment_date).toLocaleDateString('pt-BR')}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span class="text-gray-500">⏰ Horário:</span>
+                                                                            <span class="font-medium ml-1">${appointment.appointment_time}</span>
+                                                                        </div>
+                                                                        ${appointment.service?.duration_minutes ? `
+                                                                            <div>
+                                                                                <span class="text-gray-500">⏱️ Duração:</span>
+                                                                                <span class="font-medium ml-1">${appointment.service.duration_minutes} min</span>
+                                                                            </div>
+                                                                        ` : ''}
+                                                                        ${appointment.service?.price ? `
+                                                                            <div>
+                                                                                <span class="text-gray-500">💰 Valor:</span>
+                                                                                <span class="font-medium ml-1 text-green-600">R$ ${appointment.service.price}</span>
+                                                                            </div>
+                                                                        ` : ''}
+                                                                    </div>
+                                                                    
+                                                                    ${appointment.notes ? `
+                                                                        <div class="mt-3 pt-3 border-t border-gray-200">
+                                                                            <span class="text-xs text-gray-500">📝 Observações:</span>
+                                                                            <p class="text-sm text-gray-700 mt-1">${appointment.notes}</p>
+                                                                        </div>
+                                                                    ` : ''}
+                                                                </div>
+                                                                
+                                                                ${appointment.status === 'pending' ? `
+                                                                    <div class="mt-3 flex gap-2">
+                                                                        <button
+                                                                            onclick="app.cancelAppointment('${appointment.id}')"
+                                                                            class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-lg hover:bg-red-200 transition duration-200"
+                                                                        >
+                                                                            Cancelar
+                                                                        </button>
+                                                                    </div>
+                                                                ` : ''}
                                                             </div>
                                                         `).join('')}
                                                         
-                                                        ${this.appointments.length > 3 ? `
-                                                            <button class="w-full text-blue-600 hover:text-blue-700 text-sm py-2">
+                                                        ${this.appointments.length > 5 ? `
+                                                            <button
+                                                                onclick="app.showAllAppointments()"
+                                                                class="w-full text-blue-600 hover:text-blue-700 text-sm py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition duration-200"
+                                                            >
                                                                 Ver todos os agendamentos (${this.appointments.length})
                                                             </button>
                                                         ` : ''}
                                                     </div>
                                                 ` : `
-                                                    <p class="text-gray-600 text-center py-4">Nenhum agendamento ainda</p>
+                                                    <div class="text-center py-8">
+                                                        <div class="text-4xl mb-3">📅</div>
+                                                        <p class="text-gray-600">Nenhum agendamento ainda</p>
+                                                        <p class="text-sm text-gray-500 mt-1">Que tal agendar seu primeiro serviço?</p>
+                                                    </div>
                                                 `}
                                             </div>
                                         </div>
@@ -1768,6 +1960,39 @@
                     const adminLoginCancel = document.getElementById('admin-login-cancel');
                     if (adminLoginCancel) {
                         adminLoginCancel.addEventListener('click', () => this.closeAdminModal());
+                    }
+
+                    // Admin Setup (primeira configuração)
+                    const adminSetupConfirm = document.getElementById('admin-setup-confirm');
+                    if (adminSetupConfirm) {
+                        adminSetupConfirm.addEventListener('click', () => this.confirmAdminSetup());
+                    }
+
+                    const adminSetupCancel = document.getElementById('admin-setup-cancel');
+                    if (adminSetupCancel) {
+                        adminSetupCancel.addEventListener('click', () => this.closeAdminModal());
+                    }
+
+                    // Admin Change Password
+                    const adminChangePasswordBtn = document.getElementById('admin-change-password-btn');
+                    if (adminChangePasswordBtn) {
+                        adminChangePasswordBtn.addEventListener('click', () => this.showAdminChangePassword());
+                    }
+
+                    const adminPasswordChangeConfirm = document.getElementById('admin-password-change-confirm');
+                    if (adminPasswordChangeConfirm) {
+                        adminPasswordChangeConfirm.addEventListener('click', () => this.confirmAdminPasswordChange());
+                    }
+
+                    const adminPasswordChangeCancel = document.getElementById('admin-password-change-cancel');
+                    if (adminPasswordChangeCancel) {
+                        adminPasswordChangeCancel.addEventListener('click', () => this.showAdminLogin());
+                    }
+
+                    // Admin Settings Button
+                    const adminSettingsBtn = document.getElementById('admin-settings-btn');
+                    if (adminSettingsBtn) {
+                        adminSettingsBtn.addEventListener('click', () => this.showAdminSettings());
                     }
 
                     // Tabs do Admin
@@ -1967,6 +2192,149 @@
                         }
                     });
                 }
+
+                showAdminSettings() {
+                    // Criar modal de configurações administrativas
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-2xl font-bold text-gray-900">⚙️ Configurações Administrativas</h2>
+                                <button id="close-admin-settings" class="text-gray-500 hover:text-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <!-- Informações Atuais -->
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h3 class="font-medium text-gray-900 mb-3">📊 Informações do Administrador</h3>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Email:</span>
+                                            <span class="font-medium">${this.adminConfig.email || 'Não configurado'}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Última alteração:</span>
+                                            <span class="font-medium">${new Date().toLocaleDateString('pt-BR')}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Status:</span>
+                                            <span class="font-medium text-green-600">✅ Ativo</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Ações -->
+                                <div class="space-y-3">
+                                    <button
+                                        id="change-admin-email"
+                                        class="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center justify-center gap-2"
+                                    >
+                                        📧 Alterar Email
+                                    </button>
+                                    
+                                    <button
+                                        id="change-admin-password-settings"
+                                        class="w-full bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 transition duration-300 flex items-center justify-center gap-2"
+                                    >
+                                        🔐 Alterar Senha
+                                    </button>
+                                    
+                                    <button
+                                        id="reset-admin-config"
+                                        class="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition duration-300 flex items-center justify-center gap-2"
+                                    >
+                                        🔄 Resetar Configurações
+                                    </button>
+                                </div>
+                                
+                                <!-- Estatísticas do Sistema -->
+                                <div class="bg-green-50 rounded-lg p-4">
+                                    <h3 class="font-medium text-gray-900 mb-3">📊 Estatísticas do Sistema</h3>
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-blue-600">${this.allUsers?.length || 0}</div>
+                                            <div class="text-gray-600">Usuários</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-green-600">${this.businesses?.length || 0}</div>
+                                            <div class="text-gray-600">Estabelecimentos</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-purple-600">${this.allServices?.length || 0}</div>
+                                            <div class="text-gray-600">Serviços</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-orange-600">${this.allAppointments?.length || 0}</div>
+                                            <div class="text-gray-600">Agendamentos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 text-center">
+                                <button id="close-admin-settings-btn" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition duration-300">
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    // Event listeners
+                    modal.querySelector('#close-admin-settings').addEventListener('click', () => modal.remove());
+                    modal.querySelector('#close-admin-settings-btn').addEventListener('click', () => modal.remove());
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) modal.remove();
+                    });
+                    
+                    // Funcionalidades específicas
+                    modal.querySelector('#change-admin-email').addEventListener('click', () => {
+                        modal.remove();
+                        this.changeAdminEmail();
+                    });
+                    
+                    modal.querySelector('#change-admin-password-settings').addEventListener('click', () => {
+                        modal.remove();
+                        this.handleAdminLogin();
+                        setTimeout(() => this.showAdminChangePassword(), 200);
+                    });
+                    
+                    modal.querySelector('#reset-admin-config').addEventListener('click', () => {
+                        if (confirm('⚠️ ATENÇÃO: Isso resetará todas as configurações administrativas e você precisará configurar tudo novamente.\n\nTem certeza que deseja continuar?')) {
+                            localStorage.removeItem('admin_password');
+                            localStorage.removeItem('admin_email');
+                            localStorage.removeItem('admin_first_login');
+                            this.adminConfig = {
+                                password: 'admin123',
+                                email: '',
+                                firstLogin: true
+                            };
+                            modal.remove();
+                            this.showMessage('Configurações administrativas resetadas!', 'success');
+                        }
+                    });
+                }
+
+                changeAdminEmail() {
+                    const newEmail = prompt('Digite o novo email do administrador:', this.adminConfig.email);
+                    if (newEmail && newEmail.trim()) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (emailRegex.test(newEmail.trim())) {
+                            this.adminConfig.email = newEmail.trim();
+                            localStorage.setItem('admin_email', newEmail.trim());
+                            this.currentUser.email = newEmail.trim();
+                            this.showMessage('Email do administrador alterado com sucesso!', 'success');
+                            this.render(); // Re-renderizar para atualizar o header
+                        } else {
+                            this.showMessage('Por favor, digite um email válido', 'error');
+                        }
+                    }
                 
                 async handleLogin() {
                     const email = document.getElementById('email').value.trim();
@@ -2401,29 +2769,134 @@
 
                 handleAdminLogin() {
                     const modal = document.getElementById('admin-login-modal');
+                    
+                    // Verificar se é primeira configuração
+                    if (this.adminConfig.firstLogin) {
+                        this.showAdminSetup();
+                    } else {
+                        this.showAdminLogin();
+                    }
+                    
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
-                    document.getElementById('admin-password').focus();
+                }
+
+                showAdminSetup() {
+                    document.getElementById('admin-modal-title').textContent = '⚙️ Configuração Inicial';
+                    document.getElementById('admin-modal-subtitle').textContent = 'Configure suas credenciais de administrador';
+                    document.getElementById('admin-info-text').textContent = 'Primeira configuração do sistema';
+                    
+                    document.getElementById('admin-first-setup').style.display = 'block';
+                    document.getElementById('admin-normal-login').style.display = 'none';
+                    document.getElementById('admin-change-password').style.display = 'none';
+                    
+                    setTimeout(() => {
+                        document.getElementById('admin-email-setup').focus();
+                    }, 100);
+                }
+
+                showAdminLogin() {
+                    document.getElementById('admin-modal-title').textContent = '👑 Login Administrativo';
+                    document.getElementById('admin-modal-subtitle').textContent = 'Acesso completo ao sistema';
+                    document.getElementById('admin-info-text').textContent = `Admin configurado: ${this.adminConfig.email || 'Email não configurado'}`;
+                    
+                    document.getElementById('admin-first-setup').style.display = 'none';
+                    document.getElementById('admin-normal-login').style.display = 'block';
+                    document.getElementById('admin-change-password').style.display = 'none';
+                    
+                    setTimeout(() => {
+                        document.getElementById('admin-password').focus();
+                    }, 100);
+                }
+
+                showAdminChangePassword() {
+                    document.getElementById('admin-modal-title').textContent = '🔐 Alterar Senha';
+                    document.getElementById('admin-modal-subtitle').textContent = 'Defina uma nova senha de administrador';
+                    document.getElementById('admin-info-text').textContent = 'Alteração de credenciais administrativas';
+                    
+                    document.getElementById('admin-first-setup').style.display = 'none';
+                    document.getElementById('admin-normal-login').style.display = 'none';
+                    document.getElementById('admin-change-password').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        document.getElementById('admin-current-password').focus();
+                    }, 100);
                 }
 
                 closeAdminModal() {
                     const modal = document.getElementById('admin-login-modal');
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
+                    
+                    // Limpar todos os campos
                     document.getElementById('admin-password').value = '';
+                    document.getElementById('admin-email-setup').value = '';
+                    document.getElementById('admin-new-password').value = '';
+                    document.getElementById('admin-confirm-password').value = '';
+                    document.getElementById('admin-current-password').value = '';
+                    document.getElementById('admin-new-password-change').value = '';
+                    document.getElementById('admin-confirm-new-password').value = '';
+                }
+
+                async confirmAdminSetup() {
+                    const email = document.getElementById('admin-email-setup').value.trim();
+                    const newPassword = document.getElementById('admin-new-password').value;
+                    const confirmPassword = document.getElementById('admin-confirm-password').value;
+                    
+                    if (!email || !newPassword || !confirmPassword) {
+                        this.showMessage('Por favor, preencha todos os campos', 'error');
+                        return;
+                    }
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        this.showMessage('Por favor, digite um email válido', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword.length < 6) {
+                        this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword !== confirmPassword) {
+                        this.showMessage('As senhas não coincidem', 'error');
+                        return;
+                    }
+                    
+                    // Salvar configurações
+                    this.adminConfig.email = email;
+                    this.adminConfig.password = newPassword;
+                    this.adminConfig.firstLogin = false;
+                    
+                    localStorage.setItem('admin_email', email);
+                    localStorage.setItem('admin_password', newPassword);
+                    localStorage.setItem('admin_first_login', 'false');
+                    
+                    // Fazer login automaticamente
+                    this.isAdmin = true;
+                    this.currentUser = { name: 'Administrador', user_type: 'admin', email: email };
+                    this.currentView = 'admin-dashboard';
+                    this.closeAdminModal();
+                    
+                    await this.loadAdminData();
+                    this.render();
+                    this.showMessage('Administrador configurado e logado com sucesso!', 'success');
                 }
 
                 async confirmAdminLogin() {
                     const password = document.getElementById('admin-password').value;
-                    const adminPassword = 'admin123'; // Senha fixa para demonstração
                     
-                    if (password === adminPassword) {
+                    if (password === this.adminConfig.password) {
                         this.isAdmin = true;
-                        this.currentUser = { name: 'Administrador', user_type: 'admin' };
+                        this.currentUser = { 
+                            name: 'Administrador', 
+                            user_type: 'admin', 
+                            email: this.adminConfig.email 
+                        };
                         this.currentView = 'admin-dashboard';
                         this.closeAdminModal();
                         
-                        // Carregar todos os dados para o admin
                         await this.loadAdminData();
                         this.render();
                         this.showMessage('Login administrativo realizado com sucesso!', 'success');
@@ -2432,6 +2905,46 @@
                         document.getElementById('admin-password').value = '';
                         document.getElementById('admin-password').focus();
                     }
+                }
+
+                async confirmAdminPasswordChange() {
+                    const currentPassword = document.getElementById('admin-current-password').value;
+                    const newPassword = document.getElementById('admin-new-password-change').value;
+                    const confirmPassword = document.getElementById('admin-confirm-new-password').value;
+                    
+                    if (!currentPassword || !newPassword || !confirmPassword) {
+                        this.showMessage('Por favor, preencha todos os campos', 'error');
+                        return;
+                    }
+                    
+                    if (currentPassword !== this.adminConfig.password) {
+                        this.showMessage('Senha atual incorreta', 'error');
+                        document.getElementById('admin-current-password').value = '';
+                        document.getElementById('admin-current-password').focus();
+                        return;
+                    }
+                    
+                    if (newPassword.length < 6) {
+                        this.showMessage('A nova senha deve ter pelo menos 6 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword !== confirmPassword) {
+                        this.showMessage('As novas senhas não coincidem', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword === currentPassword) {
+                        this.showMessage('A nova senha deve ser diferente da atual', 'error');
+                        return;
+                    }
+                    
+                    // Atualizar senha
+                    this.adminConfig.password = newPassword;
+                    localStorage.setItem('admin_password', newPassword);
+                    
+                    this.closeAdminModal();
+                    this.showMessage('Senha de administrador alterada com sucesso!', 'success');
                 }
 
                 async loadAdminData() {
@@ -2657,6 +3170,130 @@ Criado em: ${new Date(business.created_at).toLocaleDateString('pt-BR')}`);
                         confirmBtn.disabled = false;
                     }
                 }
+
+                async cancelAppointment(appointmentId) {
+                    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
+                        return;
+                    }
+                    
+                    try {
+                        const { error } = await supabase
+                            .from('appointments')
+                            .update({ status: 'cancelled' })
+                            .eq('id', appointmentId)
+                            .eq('client_id', this.currentUser.id); // Segurança: só o dono pode cancelar
+                        
+                        if (error) throw error;
+                        
+                        this.showMessage('Agendamento cancelado com sucesso!', 'success');
+                        
+                        // Recarregar dados
+                        await this.loadData();
+                        this.render();
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao cancelar agendamento:', error);
+                        this.showMessage('Erro ao cancelar agendamento: ' + error.message, 'error');
+                    }
+                }
+
+                showAllAppointments() {
+                    // Modal simples para mostrar todos os agendamentos
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-2xl font-bold text-gray-900">📅 Todos os Meus Agendamentos</h2>
+                                <button id="close-all-appointments" class="text-gray-500 hover:text-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                ${this.appointments.map(appointment => `
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex-1">
+                                                <h4 class="font-medium text-gray-900">${appointment.service?.name || 'Serviço não especificado'}</h4>
+                                                <p class="text-sm text-gray-600">${appointment.business?.name || 'Estabelecimento não especificado'}</p>
+                                                ${appointment.business?.address ? `<p class="text-xs text-gray-500">📍 ${appointment.business.address}</p>` : ''}
+                                            </div>
+                                            <span class="inline-block px-2 py-1 text-xs rounded-full ${
+                                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }">
+                                                ${appointment.status === 'confirmed' ? 'Confirmado' :
+                                                appointment.status === 'pending' ? 'Pendente' :
+                                                appointment.status === 'cancelled' ? 'Cancelado' : 'Concluído'}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                            <div>
+                                                <span class="text-gray-500">📅 Data:</span>
+                                                <span class="font-medium ml-1">${new Date(appointment.appointment_date).toLocaleDateString('pt-BR')}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">⏰ Horário:</span>
+                                                <span class="font-medium ml-1">${appointment.appointment_time}</span>
+                                            </div>
+                                            ${appointment.service?.duration_minutes ? `
+                                                <div>
+                                                    <span class="text-gray-500">⏱️ Duração:</span>
+                                                    <span class="font-medium ml-1">${appointment.service.duration_minutes} min</span>
+                                                </div>
+                                            ` : ''}
+                                            ${appointment.service?.price ? `
+                                                <div>
+                                                    <span class="text-gray-500">💰 Valor:</span>
+                                                    <span class="font-medium ml-1 text-green-600">R$ ${appointment.service.price}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        
+                                        ${appointment.notes ? `
+                                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                                <span class="text-xs text-gray-500">📝 Observações:</span>
+                                                <p class="text-sm text-gray-700 mt-1">${appointment.notes}</p>
+                                            </div>
+                                        ` : ''}
+                                        
+                                        ${appointment.status === 'pending' ? `
+                                            <div class="mt-3">
+                                                <button
+                                                    onclick="app.cancelAppointment('${appointment.id}'); this.closest('.fixed').remove();"
+                                                    class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-lg hover:bg-red-200 transition duration-200"
+                                                >
+                                                    Cancelar Agendamento
+                                                </button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="mt-6 text-center">
+                                <button id="close-all-appointments-btn" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition duration-300">
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    // Event listeners para fechar
+                    modal.querySelector('#close-all-appointments').addEventListener('click', () => modal.remove());
+                    modal.querySelector('#close-all-appointments-btn').addEventListener('click', () => modal.remove());
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) modal.remove();
+                    });
+                }
             }
             
             // Inicializar aplicação
@@ -2670,6 +3307,8 @@ Criado em: ${new Date(business.created_at).toLocaleDateString('pt-BR')}`);
             window.app.openBookingModal = window.app.openBookingModal.bind(window.app);
             window.app.toggleBusinessStatus = window.app.toggleBusinessStatus.bind(window.app);
             window.app.viewBusinessDetails = window.app.viewBusinessDetails.bind(window.app);
+            window.app.cancelAppointment = window.app.cancelAppointment.bind(window.app);
+            window.app.showAllAppointments = window.app.showAllAppointments.bind(window.app);
         }
     </script>
 </body>
