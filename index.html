@@ -10,21 +10,6 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Configuração do Tailwind para desenvolvimento
-        if (typeof tailwind !== 'undefined') {
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        animation: {
-                            'fadeIn': 'fadeIn 0.5s ease-in',
-                            'spin': 'spin 1s linear infinite'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -70,16 +55,6 @@
         }
         .tab-button:hover {
             background-color: #f3f4f6;
-        }
-        /* Melhorias de performance */
-        * {
-            box-sizing: border-box;
-        }
-        .no-select {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
         }
     </style>
 </head>
@@ -703,7 +678,7 @@
                                             `}
                                         </div>
 
-                                        <!-- Outras abas continuam igual... -->
+                                        <!-- Outras abas -->
                                         <div id="content-users" class="tab-content hidden">
                                             <div class="text-center py-12">
                                                 <div class="text-6xl mb-4">👥</div>
@@ -805,7 +780,7 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        ✅ Beauty App v4.2 - Versão Corrigida
+                                        ✅ Beauty App v4.2 - Versão Completa Corrigida
                                     </p>
                                 </div>
                             </div>
@@ -921,23 +896,281 @@
                         </div>
                     `;
                 }
-                
-                // Função corrigida changeAdminEmail
-                changeAdminEmail() {
-                    const newEmail = prompt('Digite o novo email do administrador:', this.adminConfig.email);
-                    if (newEmail && newEmail.trim()) {
-                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                        if (emailRegex.test(newEmail.trim())) {
-                            this.adminConfig.email = newEmail.trim();
-                            localStorage.setItem('admin_email', newEmail.trim());
-                            this.currentUser.email = newEmail.trim();
-                            this.showMessage('Email do administrador alterado com sucesso!', 'success');
-                            this.render(); // Re-renderizar para atualizar o header
-                        } else {
-                            this.showMessage('Por favor, digite um email válido', 'error');
-                        }
-                    }
-                } // ✅ CHAVE FECHADA CORRIGIDA
+
+                renderRegister() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                                        ${this.userType === 'business' ? '🏢 Cadastro de Empresa' : '👤 Cadastro de Cliente'}
+                                    </h1>
+                                    <p class="text-gray-600">Preencha os dados abaixo</p>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ${this.userType === 'business' ? 'Nome da Empresa' : 'Nome Completo'}
+                                        </label>
+                                        <input
+                                            id="reg-name"
+                                            type="text"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="${this.userType === 'business' ? 'Salão Beleza Total' : 'João Silva'}"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="reg-email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="seu@email.com"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                                        <input
+                                            id="reg-phone"
+                                            type="tel"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="(48) 99999-9999"
+                                        />
+                                    </div>
+
+                                    ${this.userType === 'business' ? `
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
+                                        <input
+                                            id="reg-address"
+                                            type="text"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="Rua das Flores, 123"
+                                        />
+                                    </div>
+                                    ` : ''}
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                        <input
+                                            id="reg-password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            minlength="6"
+                                            placeholder="Mínimo 6 caracteres"
+                                        />
+                                        <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Senha</label>
+                                        <input
+                                            id="reg-confirm-password"
+                                            type="password"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="Digite a senha novamente"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="register-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300 transform hover:scale-105"
+                                    >
+                                        Cadastrar
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="back-to-login"
+                                        class="text-pink-600 hover:text-pink-700 font-medium transition duration-200"
+                                    >
+                                        Voltar ao Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                renderForgotPassword() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                                <div class="text-center mb-8">
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">🔑 Recuperar Senha</h1>
+                                    <p class="text-gray-600">Digite seu email para receber as instruções</p>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input
+                                            id="forgot-email"
+                                            type="email"
+                                            required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="seu@email.com"
+                                        />
+                                    </div>
+
+                                    <button
+                                        id="send-reset-btn"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300 transform hover:scale-105"
+                                    >
+                                        Enviar Instruções
+                                    </button>
+                                </div>
+
+                                <div class="mt-6 text-center">
+                                    <button
+                                        id="back-to-login-forgot"
+                                        class="text-pink-600 hover:text-pink-700 font-medium transition duration-200"
+                                    >
+                                        Voltar ao Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                renderEmailSent() {
+                    return `
+                        <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in text-center">
+                                <div class="text-6xl mb-4">📧</div>
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Email Enviado!</h1>
+                                <p class="text-gray-600 mb-6">
+                                    Verifique sua caixa de entrada${this.pendingVerificationEmail ? ` (${this.pendingVerificationEmail})` : ''} 
+                                    e clique no link para verificar sua conta.
+                                </p>
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <p class="text-sm text-yellow-800">
+                                        💡 <strong>Dica:</strong> Não encontrou o email? Verifique a pasta de spam.
+                                    </p>
+                                </div>
+                                <button
+                                    id="back-to-login-email"
+                                    class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition duration-300 transform hover:scale-105"
+                                >
+                                    Voltar ao Login
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                renderBusinessDashboard() {
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-white shadow-sm border-b">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                <span class="text-white font-bold">💄</span>
+                                            </div>
+                                            <div>
+                                                <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
+                                                <p class="text-sm text-gray-500">Gerencie seus serviços e agendamentos</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🏢 Dashboard Empresarial</h2>
+                                    <p class="text-gray-600">Funcionalidades em desenvolvimento...</p>
+                                    
+                                    <!-- Cards de Estatísticas -->
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                                        <div class="bg-blue-50 p-6 rounded-lg">
+                                            <h3 class="text-lg font-medium text-blue-900">Serviços</h3>
+                                            <p class="text-3xl font-bold text-blue-600">${this.services.length}</p>
+                                        </div>
+                                        <div class="bg-green-50 p-6 rounded-lg">
+                                            <h3 class="text-lg font-medium text-green-900">Agendamentos</h3>
+                                            <p class="text-3xl font-bold text-green-600">${this.appointments.length}</p>
+                                        </div>
+                                        <div class="bg-purple-50 p-6 rounded-lg">
+                                            <h3 class="text-lg font-medium text-purple-900">Receita</h3>
+                                            <p class="text-3xl font-bold text-purple-600">R$ 0</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                renderClientDashboard() {
+                    return `
+                        <div class="min-h-screen bg-gray-50">
+                            <header class="bg-white shadow-sm border-b">
+                                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div class="flex justify-between items-center py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                <span class="text-white font-bold">👤</span>
+                                            </div>
+                                            <div>
+                                                <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
+                                                <p class="text-sm text-gray-500">Encontre e agende seus serviços de beleza</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            id="logout-btn"
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                        >
+                                            Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">👤 Dashboard do Cliente</h2>
+                                    <p class="text-gray-600">Funcionalidades em desenvolvimento...</p>
+                                    
+                                    <!-- Cards de Estatísticas -->
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                                        <div class="bg-blue-50 p-6 rounded-lg">
+                                            <h3 class="text-lg font-medium text-blue-900">Estabelecimentos</h3>
+                                            <p class="text-3xl font-bold text-blue-600">${this.businesses.length}</p>
+                                        </div>
+                                        <div class="bg-green-50 p-6 rounded-lg">
+                                            <h3 class="text-lg font-medium text-green-900">Serviços Disponíveis</h3>
+                                            <p class="text-3xl font-bold text-green-600">${this.services.length}</p>
+                                        </div>
+                                        <div class="bg-purple-50 p-6 rounded-lg">
+                                            <h3 class="text-lg font-medium text-purple-900">Meus Agendamentos</h3>
+                                            <p class="text-3xl font-bold text-purple-600">${this.appointments.length}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
                 
                 async handleLogin() {
                     const email = document.getElementById('email').value.trim();
@@ -986,6 +1219,123 @@
                     } finally {
                         loginBtn.textContent = 'Entrar';
                         loginBtn.disabled = false;
+                    }
+                }
+
+                async handleRegister() {
+                    const name = document.getElementById('reg-name').value.trim();
+                    const email = document.getElementById('reg-email').value.trim();
+                    const phone = document.getElementById('reg-phone').value.trim();
+                    const password = document.getElementById('reg-password').value;
+                    const confirmPassword = document.getElementById('reg-confirm-password').value;
+                    const address = document.getElementById('reg-address')?.value.trim() || '';
+                    const registerBtn = document.getElementById('register-btn');
+                    
+                    if (!name || !email || !phone || !password || !confirmPassword) {
+                        this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
+                        return;
+                    }
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        this.showMessage('Por favor, digite um email válido', 'error');
+                        return;
+                    }
+                    
+                    if (password.length < 6) {
+                        this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        this.showMessage('As senhas não coincidem!', 'error');
+                        return;
+                    }
+                    
+                    if (this.userType === 'business' && !address) {
+                        this.showMessage('O endereço é obrigatório para empresas', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        registerBtn.textContent = 'Cadastrando...';
+                        registerBtn.disabled = true;
+                        
+                        console.log('📝 Registrando usuário:', this.userType);
+                        const { data, error } = await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: {
+                                data: {
+                                    name: name,
+                                    user_type: this.userType,
+                                    phone: phone,
+                                    address: address
+                                }
+                            }
+                        });
+                        
+                        if (error) throw error;
+                        
+                        console.log('✅ Usuário registrado:', data);
+                        this.pendingVerificationEmail = email;
+                        this.currentView = 'email-sent';
+                        this.render();
+                        this.showMessage('Cadastro realizado! Verifique seu email.', 'success');
+                        
+                    } catch (error) {
+                        console.error('❌ Erro no cadastro:', error);
+                        
+                        let errorMessage = 'Erro no cadastro: ';
+                        if (error.message.includes('already registered')) {
+                            errorMessage = 'Este email já está cadastrado';
+                        } else {
+                            errorMessage = 'Erro no cadastro: ' + error.message;
+                        }
+                        
+                        this.showMessage(errorMessage, 'error');
+                    } finally {
+                        registerBtn.textContent = 'Cadastrar';
+                        registerBtn.disabled = false;
+                    }
+                }
+
+                async handleForgotPassword() {
+                    const email = document.getElementById('forgot-email').value.trim();
+                    const sendResetBtn = document.getElementById('send-reset-btn');
+                    
+                    if (!email) {
+                        this.showMessage('Por favor, digite seu email', 'error');
+                        return;
+                    }
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        this.showMessage('Por favor, digite um email válido', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        sendResetBtn.textContent = 'Enviando...';
+                        sendResetBtn.disabled = true;
+                        
+                        console.log('🔄 Enviando email de recuperação para:', email);
+                        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                            redirectTo: window.location.origin + window.location.pathname
+                        });
+                        
+                        if (error) throw error;
+                        
+                        this.pendingVerificationEmail = email;
+                        this.currentView = 'email-sent';
+                        this.render();
+                        this.showMessage('Email de recuperação enviado!', 'success');
+                    } catch (error) {
+                        console.error('❌ Erro ao enviar email:', error);
+                        this.showMessage('Erro ao enviar email: ' + error.message, 'error');
+                    } finally {
+                        sendResetBtn.textContent = 'Enviar Instruções';
+                        sendResetBtn.disabled = false;
                     }
                 }
 
@@ -1293,6 +1643,70 @@ Criado em: ${new Date(business.created_at).toLocaleDateString('pt-BR')}`);
                             this.switchAdminTab(tabName);
                         });
                     });
+
+                    // Register navigation
+                    const registerClientBtn = document.getElementById('register-client-btn');
+                    if (registerClientBtn) {
+                        registerClientBtn.addEventListener('click', () => {
+                            this.userType = 'client';
+                            this.currentView = 'register';
+                            this.render();
+                        });
+                    }
+                    
+                    const registerBusinessBtn = document.getElementById('register-business-btn');
+                    if (registerBusinessBtn) {
+                        registerBusinessBtn.addEventListener('click', () => {
+                            this.userType = 'business';
+                            this.currentView = 'register';
+                            this.render();
+                        });
+                    }
+                    
+                    // Register
+                    const registerBtn = document.getElementById('register-btn');
+                    if (registerBtn) {
+                        registerBtn.addEventListener('click', () => this.handleRegister());
+                    }
+                    
+                    // Back to login
+                    const backToLogin = document.getElementById('back-to-login');
+                    if (backToLogin) {
+                        backToLogin.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    const backToLoginForgot = document.getElementById('back-to-login-forgot');
+                    if (backToLoginForgot) {
+                        backToLoginForgot.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    const backToLoginEmail = document.getElementById('back-to-login-email');
+                    if (backToLoginEmail) {
+                        backToLoginEmail.addEventListener('click', () => {
+                            this.currentView = 'login';
+                            this.render();
+                        });
+                    }
+                    
+                    // Forgot password
+                    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+                    if (forgotPasswordBtn) {
+                        forgotPasswordBtn.addEventListener('click', () => {
+                            this.currentView = 'forgot-password';
+                            this.render();
+                        });
+                    }
+                    
+                    const sendResetBtn = document.getElementById('send-reset-btn');
+                    if (sendResetBtn) {
+                        sendResetBtn.addEventListener('click', () => this.handleForgotPassword());
+                    }
                     
                     // Logout
                     const logoutBtn = document.getElementById('logout-btn');
@@ -1315,6 +1729,10 @@ Criado em: ${new Date(business.created_at).toLocaleDateString('pt-BR')}`);
                         if (e.key === 'Enter' && !this.loading) {
                             if (this.currentView === 'login') {
                                 this.handleLogin();
+                            } else if (this.currentView === 'register') {
+                                this.handleRegister();
+                            } else if (this.currentView === 'forgot-password') {
+                                this.handleForgotPassword();
                             }
                             
                             // Enter no modal admin
