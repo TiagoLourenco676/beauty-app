@@ -36,6 +36,16 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .error-details {
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #c33;
+        }
     </style>
 </head>
 <body>
@@ -53,60 +63,124 @@
         // CONFIGURAÇÃO DO SUPABASE
         // ========================================
         
-        // Suas credenciais do Supabase
+        // 🚨 IMPORTANTE: SUBSTITUA PELAS SUAS CREDENCIAIS CORRETAS
         const SUPABASE_URL = 'https://ueonkhdbuzujdfyhookt.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhva3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczMzY5NjY1NSwiZXhwIjoyMDQ5MjcyNjU1fQ.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhva3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczMzY5NjY1NSwiZXhwIjoyMDQ5MjcyNjU1fQ.J_Jpc3MiOjIXBhYmFzZSIsInJlZiI6InVlb25raGRidXp1amRmeWhva3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczMzY5NjY1NSwiZXhwIjoyMDQ5MjcyNjU1fQ';
+        const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_CORRETA_AQUI'; // ⚠️ SUBSTITUA PELA CHAVE CORRETA!
+        
+        // Verificar se as credenciais foram configuradas
+        if (SUPABASE_ANON_KEY === 'SUA_CHAVE_ANON_CORRETA_AQUI') {
+            showConfigurationError();
+            return;
+        }
         
         // Verificar se o Supabase foi carregado
         if (typeof window.supabase === 'undefined') {
             console.error('❌ Supabase não foi carregado!');
-            document.getElementById('root').innerHTML = `
-                <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
-                        <div class="text-6xl mb-4">❌</div>
-                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Carregamento</h1>
-                        <p class="text-gray-600 mb-4">O Supabase não foi carregado corretamente.</p>
-                        <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
-                            Tentar Novamente
-                        </button>
-                    </div>
-                </div>
-            `;
-        } else {
-            // Inicializar Supabase e tornar global
-            try {
-                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase conectado com sucesso!');
-                
-                // Testar conexão
-                window.supabaseClient.auth.getSession().then(result => {
-                    console.log('🔗 Teste de conexão:', result);
-                    initApp();
-                }).catch(error => {
-                    console.error('❌ Erro na conexão:', error);
-                    showConnectionError();
-                });
-                
-            } catch (error) {
-                console.error('❌ Erro ao inicializar Supabase:', error);
-                showConnectionError();
-            }
+            showLibraryError();
+            return;
         }
         
-        function showConnectionError() {
+        // Inicializar Supabase
+        try {
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase conectado com sucesso!');
+            
+            // Testar conexão básica
+            testConnection();
+            
+        } catch (error) {
+            console.error('❌ Erro ao inicializar Supabase:', error);
+            showConnectionError(error);
+        }
+        
+        function showConfigurationError() {
+            document.getElementById('root').innerHTML = `
+                <div class="min-h-screen bg-orange-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl">
+                        <div class="text-6xl mb-4 text-center">⚙️</div>
+                        <h1 class="text-2xl font-bold text-orange-600 mb-4 text-center">Configuração Necessária</h1>
+                        <div class="space-y-4 text-sm">
+                            <p class="text-gray-600">Para usar o Beauty App, você precisa:</p>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <h3 class="font-semibold mb-2">1. Criar as tabelas no Supabase:</h3>
+                                <p>Execute o script SQL fornecido no SQL Editor do Supabase</p>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <h3 class="font-semibold mb-2">2. Configurar a chave API:</h3>
+                                <p>Substitua <code>SUA_CHAVE_ANON_CORRETA_AQUI</code> pela sua chave anon do Supabase</p>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <h3 class="font-semibold mb-2">3. Configurar autenticação:</h3>
+                                <p>No painel do Supabase, vá em Authentication > Settings e configure o email</p>
+                            </div>
+                        </div>
+                        <button onclick="location.reload()" class="w-full mt-6 bg-orange-500 text-white px-4 py-2 rounded">
+                            Recarregar após configurar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showLibraryError() {
             document.getElementById('root').innerHTML = `
                 <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
-                        <div class="text-6xl mb-4">⚠️</div>
-                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Conexão</h1>
-                        <p class="text-gray-600 mb-4">Não foi possível conectar ao banco de dados.</p>
-                        <p class="text-sm text-gray-500 mb-4">Verifique suas credenciais do Supabase.</p>
+                        <div class="text-6xl mb-4">📚</div>
+                        <h1 class="text-2xl font-bold text-red-600 mb-4">Erro de Biblioteca</h1>
+                        <p class="text-gray-600 mb-4">O Supabase não foi carregado corretamente.</p>
+                        <p class="text-sm text-gray-500 mb-4">Verifique sua conexão com a internet.</p>
                         <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
                             Tentar Novamente
                         </button>
                     </div>
                 </div>
             `;
+        }
+        
+        function showConnectionError(error) {
+            document.getElementById('root').innerHTML = `
+                <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl">
+                        <div class="text-6xl mb-4 text-center">⚠️</div>
+                        <h1 class="text-2xl font-bold text-red-600 mb-4 text-center">Erro de Conexão</h1>
+                        <p class="text-gray-600 mb-4">Não foi possível conectar ao banco de dados.</p>
+                        
+                        <div class="error-details">
+                            <strong>Detalhes do erro:</strong><br>
+                            ${error.message || 'Erro desconhecido'}
+                        </div>
+                        
+                        <div class="space-y-2 text-sm text-gray-600 mb-4">
+                            <p><strong>Possíveis causas:</strong></p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>URL do Supabase incorreta</li>
+                                <li>Chave anon inválida ou expirada</li>
+                                <li>Projeto Supabase pausado</li>
+                                <li>Problemas de rede</li>
+                            </ul>
+                        </div>
+                        
+                        <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                            Tentar Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function testConnection() {
+            try {
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                if (error) {
+                    console.warn('⚠️ Aviso na sessão:', error.message);
+                }
+                console.log('🔗 Teste de conexão OK');
+                initApp();
+            } catch (error) {
+                console.error('❌ Erro no teste de conexão:', error);
+                showConnectionError(error);
+            }
         }
 
         // ========================================
@@ -114,7 +188,6 @@
         // ========================================
         
         function initApp() {
-            // Definir supabase globalmente para facilitar acesso
             const supabase = window.supabaseClient;
             
             class BeautyApp {
@@ -140,12 +213,16 @@
                 
                 async init() {
                     console.log('🚀 Inicializando Beauty App...');
-                    const supabase = window.supabaseClient;
                     
                     try {
                         // Verificar se usuário já está logado
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (session) {
+                        const { data: { session }, error } = await supabase.auth.getSession();
+                        if (error) {
+                            console.error('Erro ao verificar sessão:', error);
+                        }
+                        
+                        if (session?.user) {
+                            console.log('👤 Usuário já logado:', session.user.email);
                             await this.loadUserData(session.user);
                             this.currentView = this.currentUser?.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
                         }
@@ -161,6 +238,8 @@
                                 this.currentUser = null;
                                 this.currentView = 'login';
                                 this.render();
+                            } else if (event === 'TOKEN_REFRESHED') {
+                                console.log('🔄 Token renovado');
                             }
                         });
                         
@@ -170,12 +249,47 @@
                     } catch (error) {
                         console.error('❌ Erro na inicialização:', error);
                         this.showMessage('Erro ao inicializar aplicação: ' + error.message, 'error');
+                        this.renderError(error);
                     }
                 }
                 
+                renderError(error) {
+                    const root = document.getElementById('root');
+                    root.innerHTML = `
+                        <div class="min-h-screen bg-red-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl">
+                                <div class="text-6xl mb-4 text-center">💥</div>
+                                <h1 class="text-2xl font-bold text-red-600 mb-4 text-center">Erro na Aplicação</h1>
+                                
+                                <div class="error-details">
+                                    <strong>Erro:</strong> ${error.message}<br>
+                                    <strong>Código:</strong> ${error.code || 'N/A'}
+                                </div>
+                                
+                                <div class="mt-4 space-y-2 text-sm">
+                                    <p><strong>Possíveis soluções:</strong></p>
+                                    <ul class="list-disc list-inside space-y-1 text-gray-600">
+                                        <li>Verifique se as tabelas foram criadas no Supabase</li>
+                                        <li>Confirme se as políticas RLS estão ativas</li>
+                                        <li>Verifique a configuração de autenticação</li>
+                                        <li>Teste a conexão com o banco</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="mt-6 flex gap-2">
+                                    <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded">
+                                        Recarregar
+                                    </button>
+                                    <button onclick="window.location.href='https://supabase.com/dashboard'" class="bg-gray-500 text-white px-4 py-2 rounded">
+                                        Abrir Supabase
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 async loadUserData(authUser) {
-                    const supabase = window.supabaseClient;
-                    
                     try {
                         const { data, error } = await supabase
                             .from('users')
@@ -187,6 +301,7 @@
                             console.error('Erro ao carregar usuário:', error);
                             // Se o usuário não existe na tabela users, criar
                             if (error.code === 'PGRST116') {
+                                console.log('📝 Criando registro de usuário...');
                                 await this.createUserRecord(authUser);
                                 return;
                             }
@@ -196,12 +311,11 @@
                         console.log('👤 Usuário carregado:', data);
                     } catch (error) {
                         console.error('❌ Erro ao carregar dados do usuário:', error);
+                        this.showMessage('Erro ao carregar perfil: ' + error.message, 'error');
                     }
                 }
                 
                 async createUserRecord(authUser) {
-                    const supabase = window.supabaseClient;
-                    
                     try {
                         const userData = authUser.user_metadata || {};
                         const { data, error } = await supabase
@@ -221,25 +335,53 @@
                         if (error) throw error;
                         this.currentUser = data;
                         console.log('👤 Usuário criado:', data);
+                        
+                        // Se é um negócio, criar registro na tabela businesses
+                        if (userData.user_type === 'business' && userData.name) {
+                            await this.createBusinessRecord(data);
+                        }
+                        
                     } catch (error) {
                         console.error('❌ Erro ao criar registro do usuário:', error);
+                        this.showMessage('Erro ao criar perfil: ' + error.message, 'error');
+                    }
+                }
+                
+                async createBusinessRecord(user) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('businesses')
+                            .insert([{
+                                user_id: user.id,
+                                name: user.name,
+                                address: user.address || '',
+                                phone: user.phone || '',
+                                email: user.email
+                            }])
+                            .select()
+                            .single();
+                        
+                        if (error) throw error;
+                        console.log('🏢 Estabelecimento criado:', data);
+                    } catch (error) {
+                        console.error('❌ Erro ao criar estabelecimento:', error);
                     }
                 }
                 
                 async loadData() {
-                    const supabase = window.supabaseClient;
-                    
                     try {
                         // Carregar estabelecimentos
                         const { data: businessData, error: businessError } = await supabase
                             .from('businesses')
                             .select('*')
+                            .eq('active', true)
                             .order('name');
                         
                         if (businessError && businessError.code !== 'PGRST116') {
                             console.error('Erro ao carregar estabelecimentos:', businessError);
                         } else {
                             this.businesses = businessData || [];
+                            console.log(`📍 ${this.businesses.length} estabelecimentos carregados`);
                         }
                         
                         // Carregar serviços
@@ -253,6 +395,7 @@
                             console.error('Erro ao carregar serviços:', serviceError);
                         } else {
                             this.services = serviceData || [];
+                            console.log(`💼 ${this.services.length} serviços carregados`);
                         }
                         
                         // Carregar agendamentos se usuário logado
@@ -261,12 +404,11 @@
                         }
                     } catch (error) {
                         console.error('❌ Erro ao carregar dados:', error);
+                        this.showMessage('Erro ao carregar dados: ' + error.message, 'warning');
                     }
                 }
                 
                 async loadAppointments() {
-                    const supabase = window.supabaseClient;
-                    
                     try {
                         let query = supabase.from('appointments').select(`
                             *,
@@ -296,6 +438,7 @@
                             console.error('Erro ao carregar agendamentos:', error);
                         } else {
                             this.appointments = data || [];
+                            console.log(`📅 ${this.appointments.length} agendamentos carregados`);
                         }
                     } catch (error) {
                         console.error('❌ Erro ao carregar agendamentos:', error);
@@ -311,11 +454,11 @@
                     };
                     
                     const messageDiv = document.createElement('div');
-                    messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg border ${colors[type]} z-50 fade-in max-w-md`;
+                    messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg border ${colors[type]} z-50 fade-in max-w-md shadow-lg`;
                     messageDiv.innerHTML = `
                         <div class="flex items-start gap-2">
                             <span class="flex-1">${message}</span>
-                            <button onclick="this.parentElement.parentElement.remove()" class="text-lg font-bold">×</button>
+                            <button onclick="this.parentElement.parentElement.remove()" class="text-lg font-bold opacity-70 hover:opacity-100">×</button>
                         </div>
                     `;
                     document.body.appendChild(messageDiv);
@@ -324,7 +467,7 @@
                         if (messageDiv.parentElement) {
                             messageDiv.remove();
                         }
-                    }, 5000);
+                    }, 7000);
                 }
                 
                 render() {
@@ -361,7 +504,7 @@
                         <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
                             <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
                                 <div class="text-center mb-8">
-                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Beauty App</h1>
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">💄 Beauty App</h1>
                                     <p class="text-gray-600">Sistema de agendamento para salões de beleza</p>
                                 </div>
 
@@ -372,7 +515,7 @@
                                             id="email"
                                             type="email"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             placeholder="seu@email.com"
                                         />
                                     </div>
@@ -383,14 +526,14 @@
                                             id="password"
                                             type="password"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             placeholder="Sua senha"
                                         />
                                     </div>
 
                                     <button
                                         id="login-btn"
-                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300 transform hover:scale-105"
                                     >
                                         Entrar
                                     </button>
@@ -399,7 +542,7 @@
                                 <div class="mt-6 text-center">
                                     <button
                                         id="forgot-password-btn"
-                                        class="text-pink-600 hover:text-pink-700 font-medium text-sm"
+                                        class="text-pink-600 hover:text-pink-700 font-medium text-sm transition duration-200"
                                     >
                                         Esqueceu sua senha?
                                     </button>
@@ -410,13 +553,13 @@
                                     <div class="space-y-3">
                                         <button
                                             id="register-client-btn"
-                                            class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                                            class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300 transform hover:scale-105"
                                         >
                                             👤 Cadastrar como Cliente
                                         </button>
                                         <button
                                             id="register-business-btn"
-                                            class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300"
+                                            class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300 transform hover:scale-105"
                                         >
                                             🏢 Cadastrar como Empresa
                                         </button>
@@ -425,7 +568,7 @@
 
                                 <div class="mt-6 text-center">
                                     <p class="text-xs text-gray-500">
-                                        Versão de teste - Sistema conectado ao Supabase
+                                        ✅ Sistema conectado ao Supabase - v2.0
                                     </p>
                                 </div>
                             </div>
@@ -439,7 +582,7 @@
                             <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
                                 <div class="text-center mb-8">
                                     <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                                        ${this.userType === 'business' ? 'Cadastro de Empresa' : 'Cadastro de Cliente'}
+                                        ${this.userType === 'business' ? '🏢 Cadastro de Empresa' : '👤 Cadastro de Cliente'}
                                     </h1>
                                     <p class="text-gray-600">Preencha os dados abaixo</p>
                                 </div>
@@ -453,7 +596,8 @@
                                             id="reg-name"
                                             type="text"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="${this.userType === 'business' ? 'Salão Beleza Total' : 'João Silva'}"
                                         />
                                     </div>
 
@@ -463,7 +607,8 @@
                                             id="reg-email"
                                             type="email"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="seu@email.com"
                                         />
                                     </div>
 
@@ -473,7 +618,7 @@
                                             id="reg-phone"
                                             type="tel"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             placeholder="(48) 99999-9999"
                                         />
                                     </div>
@@ -485,7 +630,8 @@
                                             id="reg-address"
                                             type="text"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="Rua das Flores, 123"
                                         />
                                     </div>
                                     ` : ''}
@@ -496,8 +642,9 @@
                                             id="reg-password"
                                             type="password"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             minlength="6"
+                                            placeholder="Mínimo 6 caracteres"
                                         />
                                         <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
                                     </div>
@@ -508,13 +655,14 @@
                                             id="reg-confirm-password"
                                             type="password"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                                            placeholder="Digite a senha novamente"
                                         />
                                     </div>
 
                                     <button
                                         id="register-btn"
-                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300 transform hover:scale-105"
                                     >
                                         Cadastrar
                                     </button>
@@ -523,7 +671,7 @@
                                 <div class="mt-6 text-center">
                                     <button
                                         id="back-to-login"
-                                        class="text-pink-600 hover:text-pink-700 font-medium"
+                                        class="text-pink-600 hover:text-pink-700 font-medium transition duration-200"
                                     >
                                         Voltar ao Login
                                     </button>
@@ -538,7 +686,7 @@
                         <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
                             <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
                                 <div class="text-center mb-8">
-                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Recuperar Senha</h1>
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-2">🔑 Recuperar Senha</h1>
                                     <p class="text-gray-600">Digite seu email para receber as instruções</p>
                                 </div>
 
@@ -549,14 +697,14 @@
                                             id="forgot-email"
                                             type="email"
                                             required
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             placeholder="seu@email.com"
                                         />
                                     </div>
 
                                     <button
                                         id="send-reset-btn"
-                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                        class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300 transform hover:scale-105"
                                     >
                                         Enviar Instruções
                                     </button>
@@ -565,7 +713,7 @@
                                 <div class="mt-6 text-center">
                                     <button
                                         id="back-to-login-forgot"
-                                        class="text-pink-600 hover:text-pink-700 font-medium"
+                                        class="text-pink-600 hover:text-pink-700 font-medium transition duration-200"
                                     >
                                         Voltar ao Login
                                     </button>
@@ -585,12 +733,14 @@
                                     Verifique sua caixa de entrada${this.pendingVerificationEmail ? ` (${this.pendingVerificationEmail})` : ''} 
                                     e clique no link para verificar sua conta.
                                 </p>
-                                <p class="text-sm text-gray-500 mb-6">
-                                    Não encontrou o email? Verifique a pasta de spam.
-                                </p>
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <p class="text-sm text-yellow-800">
+                                        💡 <strong>Dica:</strong> Não encontrou o email? Verifique a pasta de spam.
+                                    </p>
+                                </div>
                                 <button
                                     id="back-to-login-email"
-                                    class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition duration-300"
+                                    class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600 transition duration-300 transform hover:scale-105"
                                 >
                                     Voltar ao Login
                                 </button>
@@ -605,7 +755,7 @@
                             <header class="bg-white shadow-sm border-b">
                                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                                     <div class="flex justify-between items-center py-4">
-                                        <h1 class="text-2xl font-bold text-gray-900">Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
+                                        <h1 class="text-2xl font-bold text-gray-900">🏢 Dashboard - ${this.currentUser?.name || 'Empresa'}</h1>
                                         <button
                                             id="logout-btn"
                                             class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
@@ -617,19 +767,61 @@
                             </header>
 
                             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                                <div class="bg-white rounded-lg shadow p-6">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Sistema Conectado!</h2>
-                                    <p class="text-gray-600 mb-4">
-                                        Parabéns! Seu Beauty App está funcionando com Supabase.
-                                    </p>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div class="bg-green-50 p-4 rounded-lg">
-                                            <h3 class="font-semibold text-green-800">✅ Conectado</h3>
-                                            <p class="text-sm text-green-600">Banco de dados Supabase ativo</p>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div class="bg-white rounded-lg shadow p-6">
+                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Sistema Conectado!</h2>
+                                        <p class="text-gray-600 mb-4">
+                                            Parabéns! Seu Beauty App está funcionando com Supabase.
+                                        </p>
+                                        <div class="grid grid-cols-1 gap-4">
+                                            <div class="bg-green-50 p-4 rounded-lg">
+                                                <h3 class="font-semibold text-green-800">✅ Banco de Dados</h3>
+                                                <p class="text-sm text-green-600">Supabase conectado e funcionando</p>
+                                            </div>
+                                            <div class="bg-blue-50 p-4 rounded-lg">
+                                                <h3 class="font-semibold text-blue-800">📧 Autenticação</h3>
+                                                <p class="text-sm text-blue-600">Sistema de login e verificação ativo</p>
+                                            </div>
+                                            <div class="bg-purple-50 p-4 rounded-lg">
+                                                <h3 class="font-semibold text-purple-800">🔒 Segurança</h3>
+                                                <p class="text-sm text-purple-600">Políticas RLS configuradas</p>
+                                            </div>
                                         </div>
-                                        <div class="bg-blue-50 p-4 rounded-lg">
-                                            <h3 class="font-semibold text-blue-800">📧 Emails</h3>
-                                            <p class="text-sm text-blue-600">Sistema de verificação funcionando</p>
+                                    </div>
+                                    
+                                    <div class="bg-white rounded-lg shadow p-6">
+                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">📊 Estatísticas</h2>
+                                        <div class="space-y-4">
+                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                                <span class="text-gray-600">Estabelecimentos</span>
+                                                <span class="font-semibold text-blue-600">${this.businesses.length}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                                <span class="text-gray-600">Serviços</span>
+                                                <span class="font-semibold text-green-600">${this.services.length}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                                <span class="text-gray-600">Agendamentos</span>
+                                                <span class="font-semibold text-purple-600">${this.appointments.length}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">⚡ Próximos Passos</h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h3 class="font-semibold text-gray-800 mb-2">1. Gerenciar Serviços</h3>
+                                            <p class="text-sm text-gray-600">Adicione e configure os serviços do seu salão</p>
+                                        </div>
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h3 class="font-semibold text-gray-800 mb-2">2. Horários</h3>
+                                            <p class="text-sm text-gray-600">Configure os horários de funcionamento</p>
+                                        </div>
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h3 class="font-semibold text-gray-800 mb-2">3. Agendamentos</h3>
+                                            <p class="text-sm text-gray-600">Gerencie os agendamentos dos clientes</p>
                                         </div>
                                     </div>
                                 </div>
@@ -644,7 +836,7 @@
                             <header class="bg-white shadow-sm border-b">
                                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                                     <div class="flex justify-between items-center py-4">
-                                        <h1 class="text-2xl font-bold text-gray-900">Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
+                                        <h1 class="text-2xl font-bold text-gray-900">👤 Olá, ${this.currentUser?.name || 'Cliente'}!</h1>
                                         <button
                                             id="logout-btn"
                                             class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
@@ -656,11 +848,54 @@
                             </header>
 
                             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                                <div class="bg-white rounded-lg shadow p-6">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Bem-vindo!</h2>
-                                    <p class="text-gray-600">
-                                        Seu cadastro foi realizado com sucesso no Beauty App.
-                                    </p>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div class="bg-white rounded-lg shadow p-6">
+                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">🎉 Bem-vindo!</h2>
+                                        <p class="text-gray-600 mb-4">
+                                            Seu cadastro foi realizado com sucesso no Beauty App.
+                                        </p>
+                                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <p class="text-green-800">
+                                                ✅ Conta verificada e ativa
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white rounded-lg shadow p-6">
+                                        <h2 class="text-xl font-semibold text-gray-900 mb-4">📍 Estabelecimentos Disponíveis</h2>
+                                        ${this.businesses.length > 0 ? `
+                                            <div class="space-y-3">
+                                                ${this.businesses.slice(0, 3).map(business => `
+                                                    <div class="border border-gray-200 rounded-lg p-3">
+                                                        <h3 class="font-medium text-gray-800">${business.name}</h3>
+                                                        <p class="text-sm text-gray-600">${business.address}</p>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        ` : `
+                                            <div class="text-center py-8 text-gray-500">
+                                                <p>Ainda não há estabelecimentos cadastrados</p>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 bg-white rounded-lg shadow p-6">
+                                    <h2 class="text-xl font-semibold text-gray-900 mb-4">⚡ Próximos Passos</h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h3 class="font-semibold text-gray-800 mb-2">1. Explorar Salões</h3>
+                                            <p class="text-sm text-gray-600">Encontre salões próximos a você</p>
+                                        </div>
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h3 class="font-semibold text-gray-800 mb-2">2. Agendar Serviço</h3>
+                                            <p class="text-sm text-gray-600">Escolha e agende seu serviço favorito</p>
+                                        </div>
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h3 class="font-semibold text-gray-800 mb-2">3. Acompanhar</h3>
+                                            <p class="text-sm text-gray-600">Gerencie seus agendamentos</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -763,15 +998,25 @@
                 async handleLogin() {
                     const email = document.getElementById('email').value.trim();
                     const password = document.getElementById('password').value;
-                    const supabase = window.supabaseClient;
+                    const loginBtn = document.getElementById('login-btn');
                     
                     if (!email || !password) {
                         this.showMessage('Por favor, preencha email e senha', 'error');
                         return;
                     }
                     
+                    // Validação básica de email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        this.showMessage('Por favor, digite um email válido', 'error');
+                        return;
+                    }
+                    
                     try {
-                        console.log('🔐 Tentando login...');
+                        loginBtn.textContent = 'Entrando...';
+                        loginBtn.disabled = true;
+                        
+                        console.log('🔐 Tentando login para:', email);
                         const { data, error } = await supabase.auth.signInWithPassword({
                             email: email,
                             password: password
@@ -781,9 +1026,23 @@
                         
                         console.log('✅ Login realizado:', data);
                         this.showMessage('Login realizado com sucesso!', 'success');
+                        
                     } catch (error) {
                         console.error('❌ Erro no login:', error);
-                        this.showMessage('Erro no login: ' + error.message, 'error');
+                        
+                        let errorMessage = 'Erro no login: ';
+                        if (error.message.includes('Invalid login credentials')) {
+                            errorMessage = 'Email ou senha incorretos';
+                        } else if (error.message.includes('Email not confirmed')) {
+                            errorMessage = 'Por favor, confirme seu email antes de fazer login';
+                        } else {
+                            errorMessage = 'Erro no login: ' + error.message;
+                        }
+                        
+                        this.showMessage(errorMessage, 'error');
+                    } finally {
+                        loginBtn.textContent = 'Entrar';
+                        loginBtn.disabled = false;
                     }
                 }
                 
@@ -794,10 +1053,17 @@
                     const password = document.getElementById('reg-password').value;
                     const confirmPassword = document.getElementById('reg-confirm-password').value;
                     const address = document.getElementById('reg-address')?.value.trim() || '';
-                    const supabase = window.supabaseClient;
+                    const registerBtn = document.getElementById('register-btn');
                     
+                    // Validações
                     if (!name || !email || !phone || !password || !confirmPassword) {
                         this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
+                        return;
+                    }
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        this.showMessage('Por favor, digite um email válido', 'error');
                         return;
                     }
                     
@@ -811,8 +1077,16 @@
                         return;
                     }
                     
+                    if (this.userType === 'business' && !address) {
+                        this.showMessage('O endereço é obrigatório para empresas', 'error');
+                        return;
+                    }
+                    
                     try {
-                        console.log('📝 Registrando usuário...');
+                        registerBtn.textContent = 'Cadastrando...';
+                        registerBtn.disabled = true;
+                        
+                        console.log('📝 Registrando usuário:', this.userType);
                         const { data, error } = await supabase.auth.signUp({
                             email: email,
                             password: password,
@@ -836,21 +1110,41 @@
                         
                     } catch (error) {
                         console.error('❌ Erro no cadastro:', error);
-                        this.showMessage('Erro no cadastro: ' + error.message, 'error');
+                        
+                        let errorMessage = 'Erro no cadastro: ';
+                        if (error.message.includes('already registered')) {
+                            errorMessage = 'Este email já está cadastrado';
+                        } else {
+                            errorMessage = 'Erro no cadastro: ' + error.message;
+                        }
+                        
+                        this.showMessage(errorMessage, 'error');
+                    } finally {
+                        registerBtn.textContent = 'Cadastrar';
+                        registerBtn.disabled = false;
                     }
                 }
                 
                 async handleForgotPassword() {
                     const email = document.getElementById('forgot-email').value.trim();
-                    const supabase = window.supabaseClient;
+                    const sendResetBtn = document.getElementById('send-reset-btn');
                     
                     if (!email) {
                         this.showMessage('Por favor, digite seu email', 'error');
                         return;
                     }
                     
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        this.showMessage('Por favor, digite um email válido', 'error');
+                        return;
+                    }
+                    
                     try {
-                        console.log('🔄 Enviando email de recuperação...');
+                        sendResetBtn.textContent = 'Enviando...';
+                        sendResetBtn.disabled = true;
+                        
+                        console.log('🔄 Enviando email de recuperação para:', email);
                         const { error } = await supabase.auth.resetPasswordForEmail(email, {
                             redirectTo: window.location.origin + window.location.pathname
                         });
@@ -864,12 +1158,13 @@
                     } catch (error) {
                         console.error('❌ Erro ao enviar email:', error);
                         this.showMessage('Erro ao enviar email: ' + error.message, 'error');
+                    } finally {
+                        sendResetBtn.textContent = 'Enviar Instruções';
+                        sendResetBtn.disabled = false;
                     }
                 }
                 
                 async handleLogout() {
-                    const supabase = window.supabaseClient;
-                    
                     try {
                         const { error } = await supabase.auth.signOut();
                         if (error) throw error;
@@ -886,6 +1181,7 @@
             }
             
             // Inicializar aplicação
+            console.log('🚀 Iniciando Beauty App...');
             window.app = new BeautyApp();
         }
     </script>
