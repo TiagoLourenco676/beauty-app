@@ -73,14 +73,13 @@
                 </div>
             `;
         } else {
-            // Inicializar Supabase
-            let supabase;
+            // Inicializar Supabase e tornar global
             try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 console.log('✅ Supabase conectado com sucesso!');
                 
                 // Testar conexão
-                supabase.auth.getSession().then(result => {
+                window.supabaseClient.auth.getSession().then(result => {
                     console.log('🔗 Teste de conexão:', result);
                     initApp();
                 }).catch(error => {
@@ -115,6 +114,9 @@
         // ========================================
         
         function initApp() {
+            // Definir supabase globalmente para facilitar acesso
+            const supabase = window.supabaseClient;
+            
             class BeautyApp {
                 constructor() {
                     this.currentView = 'login';
@@ -138,13 +140,14 @@
                 
                 async init() {
                     console.log('🚀 Inicializando Beauty App...');
+                    const supabase = window.supabaseClient;
                     
                     try {
                         // Verificar se usuário já está logado
                         const { data: { session } } = await supabase.auth.getSession();
                         if (session) {
                             await this.loadUserData(session.user);
-                            this.currentView = this.currentUser.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                            this.currentView = this.currentUser?.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
                         }
                         
                         // Escutar mudanças de autenticação
@@ -152,7 +155,7 @@
                             console.log('🔄 Auth state changed:', event);
                             if (event === 'SIGNED_IN') {
                                 await this.loadUserData(session.user);
-                                this.currentView = this.currentUser.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
+                                this.currentView = this.currentUser?.user_type === 'business' ? 'business-dashboard' : 'client-dashboard';
                                 this.render();
                             } else if (event === 'SIGNED_OUT') {
                                 this.currentUser = null;
@@ -171,6 +174,8 @@
                 }
                 
                 async loadUserData(authUser) {
+                    const supabase = window.supabaseClient;
+                    
                     try {
                         const { data, error } = await supabase
                             .from('users')
@@ -195,6 +200,8 @@
                 }
                 
                 async createUserRecord(authUser) {
+                    const supabase = window.supabaseClient;
+                    
                     try {
                         const userData = authUser.user_metadata || {};
                         const { data, error } = await supabase
@@ -220,6 +227,8 @@
                 }
                 
                 async loadData() {
+                    const supabase = window.supabaseClient;
+                    
                     try {
                         // Carregar estabelecimentos
                         const { data: businessData, error: businessError } = await supabase
@@ -256,6 +265,8 @@
                 }
                 
                 async loadAppointments() {
+                    const supabase = window.supabaseClient;
+                    
                     try {
                         let query = supabase.from('appointments').select(`
                             *,
@@ -752,6 +763,7 @@
                 async handleLogin() {
                     const email = document.getElementById('email').value.trim();
                     const password = document.getElementById('password').value;
+                    const supabase = window.supabaseClient;
                     
                     if (!email || !password) {
                         this.showMessage('Por favor, preencha email e senha', 'error');
@@ -782,6 +794,7 @@
                     const password = document.getElementById('reg-password').value;
                     const confirmPassword = document.getElementById('reg-confirm-password').value;
                     const address = document.getElementById('reg-address')?.value.trim() || '';
+                    const supabase = window.supabaseClient;
                     
                     if (!name || !email || !phone || !password || !confirmPassword) {
                         this.showMessage('Por favor, preencha todos os campos obrigatórios', 'error');
@@ -829,6 +842,7 @@
                 
                 async handleForgotPassword() {
                     const email = document.getElementById('forgot-email').value.trim();
+                    const supabase = window.supabaseClient;
                     
                     if (!email) {
                         this.showMessage('Por favor, digite seu email', 'error');
@@ -854,6 +868,8 @@
                 }
                 
                 async handleLogout() {
+                    const supabase = window.supabaseClient;
+                    
                     try {
                         const { error } = await supabase.auth.signOut();
                         if (error) throw error;
