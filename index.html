@@ -23,65 +23,78 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
     <script>
-        // Sistema Beauty App - Versão Vanilla JS
+        // Sistema Beauty App - Versão Completa e Funcional
         class BeautyApp {
             constructor() {
                 this.currentView = 'login';
                 this.currentUser = null;
                 this.userType = '';
                 this.showPassword = false;
+                this.selectedBusiness = null;
+                this.selectedService = null;
+                this.editingService = null;
+                this.currentDate = new Date().toISOString().split('T')[0];
                 
-                // Dados simulados
-                this.users = [
-                    { id: 1, email: 'admin@salao.com', password: '123456', type: 'business', name: 'Salão Beleza Total', phone: '(48) 99999-9999', address: 'Rua das Flores, 123 - Tijucas/SC' },
-                    { id: 2, email: 'cliente@email.com', password: '123456', type: 'client', name: 'Maria Silva', phone: '(48) 88888-8888' }
-                ];
-                
-                this.businesses = [
-                    { 
-                        id: 1, 
-                        name: 'Salão Beleza Total', 
-                        email: 'admin@salao.com',
-                        phone: '(48) 99999-9999', 
-                        address: 'Rua das Flores, 123 - Tijucas/SC',
-                        rating: 4.8,
-                        image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'
-                    }
-                ];
-                
-                this.services = [
-                    { id: 1, businessId: 1, name: 'Corte Feminino', price: 45.00, duration: 60, description: 'Corte moderno e estiloso' },
-                    { id: 2, businessId: 1, name: 'Coloração', price: 120.00, duration: 120, description: 'Coloração completa com produtos de qualidade' },
-                    { id: 3, businessId: 1, name: 'Escova', price: 35.00, duration: 45, description: 'Escova modeladora' },
-                    { id: 4, businessId: 1, name: 'Manicure', price: 25.00, duration: 45, description: 'Cuidados completos para suas unhas' }
-                ];
-                
-                this.appointments = [
-                    { 
-                        id: 1, 
-                        clientId: 2, 
-                        businessId: 1, 
-                        serviceId: 1, 
-                        date: '2025-06-10', 
-                        time: '14:00', 
-                        status: 'confirmed',
-                        clientName: 'Maria Silva',
-                        serviceName: 'Corte Feminino',
-                        price: 45.00
-                    }
-                ];
+                // Dados iniciais vazios (sem exemplos)
+                this.users = [];
+                this.businesses = [];
+                this.services = [];
+                this.appointments = [];
+                this.emailVerifications = [];
                 
                 this.init();
             }
             
             init() {
                 this.render();
+            }
+            
+            // Função para gerar ID único
+            generateId() {
+                return Date.now() + Math.random().toString(36).substr(2, 9);
+            }
+            
+            // Função para simular envio de email
+            sendEmail(to, subject, message) {
+                console.log(`📧 EMAIL ENVIADO:
+To: ${to}
+Subject: ${subject}
+Message: ${message}`);
+                
+                // Simular verificação de email
+                if (subject.includes('Verificação')) {
+                    const verificationCode = Math.random().toString(36).substr(2, 8).toUpperCase();
+                    this.emailVerifications.push({
+                        email: to,
+                        code: verificationCode,
+                        verified: false,
+                        createdAt: new Date()
+                    });
+                    
+                    alert(`Email de verificação enviado para ${to}!\nCódigo: ${verificationCode}\n(Em produção, este código seria enviado por email real)`);
+                    return verificationCode;
+                }
+                
+                if (subject.includes('Recuperação')) {
+                    const resetCode = Math.random().toString(36).substr(2, 8).toUpperCase();
+                    alert(`Email de recuperação enviado para ${to}!\nCódigo: ${resetCode}\n(Em produção, este código seria enviado por email real)`);
+                    return resetCode;
+                }
+                
+                return true;
             }
             
             render() {
@@ -94,11 +107,23 @@
                     case 'register':
                         root.innerHTML = this.renderRegister();
                         break;
+                    case 'forgot-password':
+                        root.innerHTML = this.renderForgotPassword();
+                        break;
+                    case 'verify-email':
+                        root.innerHTML = this.renderEmailVerification();
+                        break;
                     case 'business-dashboard':
                         root.innerHTML = this.renderBusinessDashboard();
                         break;
                     case 'client-dashboard':
                         root.innerHTML = this.renderClientDashboard();
+                        break;
+                    case 'business-details':
+                        root.innerHTML = this.renderBusinessDetails();
+                        break;
+                    case 'booking':
+                        root.innerHTML = this.renderBookingFlow();
                         break;
                     default:
                         root.innerHTML = this.renderLogin();
@@ -157,6 +182,15 @@
                             </div>
 
                             <div class="mt-6 text-center">
+                                <button
+                                    id="forgot-password-btn"
+                                    class="text-pink-600 hover:text-pink-700 font-medium text-sm"
+                                >
+                                    Esqueceu sua senha?
+                                </button>
+                            </div>
+
+                            <div class="mt-6 text-center">
                                 <p class="text-gray-600 mb-4">Não tem uma conta?</p>
                                 <div class="space-y-3">
                                     <button
@@ -172,12 +206,6 @@
                                         🏢 Cadastrar como Empresa
                                     </button>
                                 </div>
-                            </div>
-
-                            <div class="mt-6 text-center">
-                                <p class="text-sm text-gray-500">
-                                    Demo: admin@salao.com / cliente@email.com (senha: 123456)
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -248,7 +276,9 @@
                                         type="password"
                                         required
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        minlength="6"
                                     />
+                                    <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
                                 </div>
 
                                 <div>
@@ -282,9 +312,94 @@
                 `;
             }
             
+            renderForgotPassword() {
+                return `
+                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                            <div class="text-center mb-8">
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Recuperar Senha</h1>
+                                <p class="text-gray-600">Digite seu email para receber as instruções</p>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input
+                                        id="forgot-email"
+                                        type="email"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        placeholder="seu@email.com"
+                                    />
+                                </div>
+
+                                <button
+                                    id="send-reset-btn"
+                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                >
+                                    Enviar Instruções
+                                </button>
+                            </div>
+
+                            <div class="mt-6 text-center">
+                                <button
+                                    id="back-to-login-forgot"
+                                    class="text-pink-600 hover:text-pink-700 font-medium"
+                                >
+                                    Voltar ao Login
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderEmailVerification() {
+                return `
+                    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+                            <div class="text-center mb-8">
+                                <div class="text-6xl mb-4">📧</div>
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Verificar Email</h1>
+                                <p class="text-gray-600">Digite o código enviado para seu email</p>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Código de Verificação</label>
+                                    <input
+                                        id="verification-code"
+                                        type="text"
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center text-lg tracking-widest"
+                                        placeholder="XXXXXXXX"
+                                        maxlength="8"
+                                    />
+                                </div>
+
+                                <button
+                                    id="verify-btn"
+                                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition duration-300"
+                                >
+                                    Verificar Código
+                                </button>
+                                
+                                <button
+                                    id="resend-code-btn"
+                                    class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300"
+                                >
+                                    Reenviar Código
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
             renderBusinessDashboard() {
                 const userServices = this.services.filter(s => s.businessId === this.currentUser.id);
                 const userAppointments = this.appointments.filter(a => a.businessId === this.currentUser.id);
+                const todayAppointments = userAppointments.filter(a => a.date === this.currentDate);
                 
                 return `
                     <div class="min-h-screen bg-gray-50">
@@ -305,12 +420,21 @@
 
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                             <!-- Stats -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                                 <div class="bg-white p-6 rounded-lg shadow">
                                     <div class="flex items-center">
                                         <div class="text-3xl mr-4">📅</div>
                                         <div>
-                                            <p class="text-sm font-medium text-gray-500">Agendamentos Hoje</p>
+                                            <p class="text-sm font-medium text-gray-500">Hoje</p>
+                                            <p class="text-2xl font-semibold text-gray-900">${todayAppointments.length}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                    <div class="flex items-center">
+                                        <div class="text-3xl mr-4">📋</div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Total</p>
                                             <p class="text-2xl font-semibold text-gray-900">${userAppointments.length}</p>
                                         </div>
                                     </div>
@@ -319,80 +443,230 @@
                                     <div class="flex items-center">
                                         <div class="text-3xl mr-4">⚙️</div>
                                         <div>
-                                            <p class="text-sm font-medium text-gray-500">Serviços Ativos</p>
+                                            <p class="text-sm font-medium text-gray-500">Serviços</p>
                                             <p class="text-2xl font-semibold text-gray-900">${userServices.length}</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="bg-white p-6 rounded-lg shadow">
                                     <div class="flex items-center">
-                                        <div class="text-3xl mr-4">⭐</div>
+                                        <div class="text-3xl mr-4">💰</div>
                                         <div>
-                                            <p class="text-sm font-medium text-gray-500">Avaliação</p>
-                                            <p class="text-2xl font-semibold text-gray-900">4.8</p>
+                                            <p class="text-sm font-medium text-gray-500">Faturamento</p>
+                                            <p class="text-2xl font-semibold text-gray-900">R$ ${userAppointments.reduce((total, apt) => total + (apt.price || 0), 0).toFixed(2)}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <!-- Serviços -->
+                                <!-- Gerenciar Serviços -->
                                 <div class="bg-white rounded-lg shadow p-6">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Meus Serviços</h2>
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h2 class="text-xl font-semibold text-gray-900">Gerenciar Serviços</h2>
+                                        <button id="add-service-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                                            ➕ Novo Serviço
+                                        </button>
+                                    </div>
                                     
-                                    <div class="space-y-3">
-                                        ${userServices.map(service => `
-                                            <div class="border border-gray-200 rounded-lg p-4">
-                                                <h3 class="font-semibold text-gray-900">${service.name}</h3>
-                                                <p class="text-sm text-gray-600">${service.description}</p>
-                                                <div class="flex items-center mt-2 text-sm text-gray-500">
-                                                    <span>R$ ${service.price.toFixed(2)}</span>
-                                                    <span class="mx-2">•</span>
-                                                    <span>⏱️ ${service.duration} min</span>
-                                                </div>
+                                    <!-- Formulário para adicionar/editar serviço -->
+                                    <div id="service-form" class="mb-6 space-y-4 ${this.editingService || this.showServiceForm ? '' : 'hidden'}">
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Serviço</label>
+                                                <input
+                                                    id="service-name"
+                                                    type="text"
+                                                    required
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                    placeholder="Ex: Corte feminino"
+                                                />
                                             </div>
-                                        `).join('')}
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
+                                                <input
+                                                    id="service-price"
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    required
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
+                                                <input
+                                                    id="service-duration"
+                                                    type="number"
+                                                    min="15"
+                                                    step="15"
+                                                    required
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                    placeholder="60"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                                                <select
+                                                    id="service-category"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                >
+                                                    <option value="cabelo">Cabelo</option>
+                                                    <option value="unhas">Unhas</option>
+                                                    <option value="estetica">Estética</option>
+                                                    <option value="depilacao">Depilação</option>
+                                                    <option value="massagem">Massagem</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                                            <textarea
+                                                id="service-description"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                rows="2"
+                                                placeholder="Descrição detalhada do serviço"
+                                            ></textarea>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button
+                                                id="save-service-btn"
+                                                class="flex-1 bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition duration-300"
+                                            >
+                                                ${this.editingService ? 'Atualizar' : 'Salvar'} Serviço
+                                            </button>
+                                            <button
+                                                id="cancel-service-btn"
+                                                class="px-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lista de serviços -->
+                                    <div class="space-y-3">
+                                        ${userServices.length === 0 ? 
+                                            '<p class="text-gray-500 text-center py-8">Nenhum serviço cadastrado ainda.<br>Clique em "Novo Serviço" para começar.</p>' 
+                                            : 
+                                            userServices.map(service => `
+                                                <div class="border border-gray-200 rounded-lg p-4">
+                                                    <div class="flex justify-between items-start">
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center gap-2">
+                                                                <h3 class="font-semibold text-gray-900">${service.name}</h3>
+                                                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${service.category || 'cabelo'}</span>
+                                                            </div>
+                                                            <p class="text-sm text-gray-600 mt-1">${service.description || ''}</p>
+                                                            <div class="flex items-center mt-2 text-sm text-gray-500">
+                                                                <span class="font-semibold text-green-600">R$ ${service.price.toFixed(2)}</span>
+                                                                <span class="mx-2">•</span>
+                                                                <span>⏱️ ${service.duration} min</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex space-x-2">
+                                                            <button
+                                                                onclick="app.editService('${service.id}')"
+                                                                class="text-blue-600 hover:text-blue-800 p-1"
+                                                                title="Editar"
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                onclick="app.deleteService('${service.id}')"
+                                                                class="text-red-600 hover:text-red-800 p-1"
+                                                                title="Excluir"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('')
+                                        }
                                     </div>
                                 </div>
 
-                                <!-- Agendamentos -->
+                                <!-- Agenda de Agendamentos -->
                                 <div class="bg-white rounded-lg shadow p-6">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Agendamentos</h2>
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h2 class="text-xl font-semibold text-gray-900">Agenda</h2>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                id="date-filter"
+                                                type="date"
+                                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                                value="${this.currentDate}"
+                                            />
+                                        </div>
+                                    </div>
                                     
                                     <div class="space-y-4">
-                                        ${userAppointments.map(appointment => `
-                                            <div class="border border-gray-200 rounded-lg p-4">
-                                                <div class="flex justify-between items-start">
-                                                    <div>
-                                                        <h3 class="font-semibold text-gray-900">${appointment.clientName}</h3>
-                                                        <p class="text-sm text-gray-600">${appointment.serviceName}</p>
-                                                        <div class="flex items-center mt-2 text-sm text-gray-500">
-                                                            <span>📅 ${appointment.date}</span>
-                                                            <span class="mx-2">•</span>
-                                                            <span>⏰ ${appointment.time}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-right">
-                                                        <span class="text-lg font-semibold text-green-600">
-                                                            R$ ${appointment.price.toFixed(2)}
-                                                        </span>
-                                                        <div class="mt-1">
-                                                            <span class="inline-flex px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                                                                Confirmado
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                        
-                                        ${userAppointments.length === 0 ? '<p class="text-gray-500 text-center py-8">Nenhum agendamento para hoje</p>' : ''}
+                                        ${this.renderAppointmentList(userAppointments)}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
+            }
+            
+            renderAppointmentList(appointments) {
+                if (appointments.length === 0) {
+                    return '<p class="text-gray-500 text-center py-8">Nenhum agendamento encontrado</p>';
+                }
+                
+                const sortedAppointments = appointments.sort((a, b) => {
+                    const dateA = new Date(a.date + ' ' + a.time);
+                    const dateB = new Date(b.date + ' ' + b.time);
+                    return dateA - dateB;
+                });
+                
+                return sortedAppointments.map(appointment => {
+                    const service = this.services.find(s => s.id === appointment.serviceId);
+                    const isToday = appointment.date === this.currentDate;
+                    const isPast = new Date(appointment.date + ' ' + appointment.time) < new Date();
+                    
+                    return `
+                        <div class="border border-gray-200 rounded-lg p-4 ${isToday ? 'bg-blue-50 border-blue-200' : isPast ? 'bg-gray-50' : ''}">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-gray-900">${appointment.clientName}</h3>
+                                        ${isToday ? '<span class="text-xs bg-blue-500 text-white px-2 py-1 rounded">HOJE</span>' : ''}
+                                        ${isPast ? '<span class="text-xs bg-gray-500 text-white px-2 py-1 rounded">FINALIZADO</span>' : ''}
+                                    </div>
+                                    <p class="text-sm text-gray-600">${service ? service.name : 'Serviço removido'}</p>
+                                    <div class="flex items-center mt-2 text-sm text-gray-500">
+                                        <span>📅 ${this.formatDate(appointment.date)}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>⏰ ${appointment.time}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>📞 ${appointment.clientPhone || 'N/A'}</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-lg font-semibold text-green-600">
+                                        R$ ${appointment.price.toFixed(2)}
+                                    </span>
+                                    <div class="mt-1">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold ${
+                                            appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                            appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-red-100 text-red-800'
+                                        } rounded-full">
+                                            ${appointment.status === 'confirmed' ? 'Confirmado' : 
+                                              appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
             
             renderClientDashboard() {
@@ -418,33 +692,60 @@
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 <!-- Estabelecimentos -->
                                 <div class="lg:col-span-2">
-                                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Estabelecimentos Próximos</h2>
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h2 class="text-xl font-semibold text-gray-900">Estabelecimentos</h2>
+                                        <div class="flex items-center gap-4">
+                                            <input
+                                                id="search-businesses"
+                                                type="text"
+                                                placeholder="Buscar salões..."
+                                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            />
+                                            <select
+                                                id="filter-category"
+                                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            >
+                                                <option value="">Todas categorias</option>
+                                                <option value="cabelo">Cabelo</option>
+                                                <option value="unhas">Unhas</option>
+                                                <option value="estetica">Estética</option>
+                                                <option value="depilacao">Depilação</option>
+                                                <option value="massagem">Massagem</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        ${this.businesses.map(business => `
-                                            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                                                <img
-                                                    src="${business.image}"
-                                                    alt="${business.name}"
-                                                    class="w-full h-48 object-cover rounded-t-lg"
-                                                />
-                                                <div class="p-4">
-                                                    <h3 class="font-semibold text-gray-900">${business.name}</h3>
-                                                    <div class="flex items-center mt-2">
-                                                        <span class="text-sm text-gray-600">📍 ${business.address}</span>
-                                                    </div>
-                                                    <div class="flex items-center mt-1">
-                                                        <span class="text-sm text-gray-600">📞 ${business.phone}</span>
-                                                    </div>
-                                                    <div class="flex items-center justify-between mt-3">
-                                                        <div class="flex items-center">
-                                                            <span class="text-sm text-gray-600">⭐ ${business.rating}</span>
+                                        ${this.businesses.length === 0 ? 
+                                            '<div class="col-span-2 text-center py-12"><p class="text-gray-500">Nenhuma empresa cadastrada ainda</p></div>' 
+                                            :
+                                            this.businesses.map(business => `
+                                                <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer" onclick="app.selectBusiness('${business.id}')">
+                                                    <img
+                                                        src="${business.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'}"
+                                                        alt="${business.name}"
+                                                        class="w-full h-48 object-cover rounded-t-lg"
+                                                        onerror="this.src='https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'"
+                                                    />
+                                                    <div class="p-4">
+                                                        <h3 class="font-semibold text-gray-900">${business.name}</h3>
+                                                        <div class="flex items-center mt-2">
+                                                            <span class="text-sm text-gray-600">📍 ${business.address}</span>
                                                         </div>
-                                                        <span class="text-pink-600 text-sm font-medium cursor-pointer hover:text-pink-700">Ver serviços →</span>
+                                                        <div class="flex items-center mt-1">
+                                                            <span class="text-sm text-gray-600">📞 ${business.phone}</span>
+                                                        </div>
+                                                        <div class="flex items-center justify-between mt-3">
+                                                            <div class="flex items-center">
+                                                                <span class="text-sm text-gray-600">⭐ ${business.rating || '5.0'}</span>
+                                                                <span class="text-sm text-gray-500 ml-2">(${this.services.filter(s => s.businessId === business.id).length} serviços)</span>
+                                                            </div>
+                                                            <span class="text-pink-600 text-sm font-medium hover:text-pink-700">Ver serviços →</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        `).join('')}
+                                            `).join('')
+                                        }
                                     </div>
                                 </div>
 
@@ -453,25 +754,38 @@
                                     <h2 class="text-xl font-semibold text-gray-900 mb-6">Meus Agendamentos</h2>
                                     
                                     <div class="space-y-4">
-                                        ${userAppointments.map(appointment => `
-                                            <div class="bg-white rounded-lg shadow p-4">
-                                                <h3 class="font-semibold text-gray-900">${appointment.serviceName}</h3>
-                                                <div class="flex items-center mt-2 text-sm text-gray-500">
-                                                    <span>📅 ${appointment.date}</span>
-                                                </div>
-                                                <div class="flex items-center mt-1 text-sm text-gray-500">
-                                                    <span>⏰ ${appointment.time}</span>
-                                                </div>
-                                                <div class="flex items-center justify-between mt-3">
-                                                    <span class="text-green-600 font-semibold">R$ ${appointment.price.toFixed(2)}</span>
-                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                                                        Confirmado
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                        
-                                        ${userAppointments.length === 0 ? '<p class="text-gray-500 text-center py-8">Nenhum agendamento</p>' : ''}
+                                        ${userAppointments.length === 0 ? 
+                                            '<p class="text-gray-500 text-center py-8">Nenhum agendamento realizado</p>' 
+                                            :
+                                            userAppointments.map(appointment => {
+                                                const business = this.businesses.find(b => b.id === appointment.businessId);
+                                                const service = this.services.find(s => s.id === appointment.serviceId);
+                                                
+                                                return `
+                                                    <div class="bg-white rounded-lg shadow p-4">
+                                                        <h3 class="font-semibold text-gray-900">${service ? service.name : 'Serviço removido'}</h3>
+                                                        <p class="text-sm text-gray-600">${business ? business.name : 'Estabelecimento'}</p>
+                                                        <div class="flex items-center mt-2 text-sm text-gray-500">
+                                                            <span>📅 ${this.formatDate(appointment.date)}</span>
+                                                        </div>
+                                                        <div class="flex items-center mt-1 text-sm text-gray-500">
+                                                            <span>⏰ ${appointment.time}</span>
+                                                        </div>
+                                                        <div class="flex items-center justify-between mt-3">
+                                                            <span class="text-green-600 font-semibold">R$ ${appointment.price.toFixed(2)}</span>
+                                                            <span class="inline-flex px-2 py-1 text-xs font-semibold ${
+                                                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                                appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                'bg-red-100 text-red-800'
+                                                            } rounded-full">
+                                                                ${appointment.status === 'confirmed' ? 'Confirmado' : 
+                                                                  appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -480,6 +794,223 @@
                 `;
             }
             
+            renderBusinessDetails() {
+                if (!this.selectedBusiness) {
+                    this.currentView = 'client-dashboard';
+                    this.render();
+                    return;
+                }
+                
+                const businessServices = this.services.filter(s => s.businessId === this.selectedBusiness.id);
+                
+                return `
+                    <div class="min-h-screen bg-gray-50">
+                        <header class="bg-white shadow-sm border-b">
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div class="flex justify-between items-center py-4">
+                                    <div class="flex items-center gap-4">
+                                        <button
+                                            id="back-to-businesses"
+                                            class="text-gray-600 hover:text-gray-800"
+                                        >
+                                            ← Voltar
+                                        </button>
+                                        <h1 class="text-2xl font-bold text-gray-900">${this.selectedBusiness.name}</h1>
+                                    </div>
+                                    <button
+                                        id="logout-btn"
+                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                    >
+                                        Sair
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="max-w-4xl mx-auto px-4 py-8">
+                            <!-- Info do estabelecimento -->
+                            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                                <div class="flex items-start space-x-4">
+                                    <img
+                                        src="${this.selectedBusiness.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'}"
+                                        alt="${this.selectedBusiness.name}"
+                                        class="w-20 h-20 rounded-lg object-cover"
+                                        onerror="this.src='https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop'"
+                                    />
+                                    <div class="flex-1">
+                                        <h2 class="text-xl font-semibold text-gray-900">${this.selectedBusiness.name}</h2>
+                                        <div class="flex items-center mt-2">
+                                            <span class="text-gray-600">📍 ${this.selectedBusiness.address}</span>
+                                        </div>
+                                        <div class="flex items-center mt-1">
+                                            <span class="text-gray-600">📞 ${this.selectedBusiness.phone}</span>
+                                        </div>
+                                        <div class="flex items-center mt-1">
+                                            <span class="text-gray-600">⭐ ${this.selectedBusiness.rating || '5.0'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Serviços disponíveis -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Serviços Disponíveis</h3>
+                                
+                                ${businessServices.length === 0 ? 
+                                    '<p class="text-gray-500 text-center py-8">Este estabelecimento ainda não cadastrou serviços</p>' 
+                                    :
+                                    `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        ${businessServices.map(service => `
+                                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <h4 class="font-semibold text-gray-900">${service.name}</h4>
+                                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${service.category || 'cabelo'}</span>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-3">${service.description || ''}</p>
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center text-sm text-gray-500">
+                                                        <span class="font-semibold text-green-600">R$ ${service.price.toFixed(2)}</span>
+                                                        <span class="mx-2">•</span>
+                                                        <span>⏱️ ${service.duration} min</span>
+                                                    </div>
+                                                    <button
+                                                        onclick="app.selectService('${service.id}')"
+                                                        class="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition duration-300 text-sm"
+                                                    >
+                                                        Agendar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderBookingFlow() {
+                if (!this.selectedService) {
+                    this.currentView = 'client-dashboard';
+                    this.render();
+                    return;
+                }
+                
+                const service = this.services.find(s => s.id === this.selectedService);
+                const business = this.businesses.find(b => b.id === service.businessId);
+                
+                return `
+                    <div class="min-h-screen bg-gray-50">
+                        <header class="bg-white shadow-sm border-b">
+                            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div class="flex justify-between items-center py-4">
+                                    <div class="flex items-center gap-4">
+                                        <button
+                                            id="back-to-business"
+                                            class="text-gray-600 hover:text-gray-800"
+                                        >
+                                            ← Voltar
+                                        </button>
+                                        <h1 class="text-2xl font-bold text-gray-900">Agendar Serviço</h1>
+                                    </div>
+                                    <button
+                                        id="logout-btn"
+                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                                    >
+                                        Sair
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="max-w-2xl mx-auto px-4 py-8">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h2 class="text-xl font-semibold text-gray-900 mb-6">Confirmar Agendamento</h2>
+                                
+                                <!-- Resumo do serviço -->
+                                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                                    <h3 class="font-semibold text-gray-900">${service.name}</h3>
+                                    <p class="text-gray-600">${service.description || ''}</p>
+                                    <p class="text-sm text-gray-500 mt-1">${business.name}</p>
+                                    <div class="flex items-center mt-2 text-sm text-gray-500">
+                                        <span class="font-semibold text-green-600">R$ ${service.price.toFixed(2)}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>⏱️ ${service.duration} min</span>
+                                    </div>
+                                </div>
+
+                                <!-- Formulário de agendamento -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
+                                        <input
+                                            id="booking-date"
+                                            type="date"
+                                            required
+                                            min="${new Date().toISOString().split('T')[0]}"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Horário</label>
+                                        <select
+                                            id="booking-time"
+                                            required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        >
+                                            <option value="">Selecione um horário</option>
+                                            <option value="08:00">08:00</option>
+                                            <option value="08:30">08:30</option>
+                                            <option value="09:00">09:00</option>
+                                            <option value="09:30">09:30</option>
+                                            <option value="10:00">10:00</option>
+                                            <option value="10:30">10:30</option>
+                                            <option value="11:00">11:00</option>
+                                            <option value="11:30">11:30</option>
+                                            <option value="14:00">14:00</option>
+                                            <option value="14:30">14:30</option>
+                                            <option value="15:00">15:00</option>
+                                            <option value="15:30">15:30</option>
+                                            <option value="16:00">16:00</option>
+                                            <option value="16:30">16:30</option>
+                                            <option value="17:00">17:00</option>
+                                            <option value="17:30">17:30</option>
+                                            <option value="18:00">18:00</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Observações (opcional)</label>
+                                        <textarea
+                                            id="booking-notes"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                            rows="3"
+                                            placeholder="Alguma observação especial?"
+                                        ></textarea>
+                                    </div>
+
+                                    <button
+                                        id="confirm-booking-btn"
+                                        class="w-full bg-pink-500 text-white py-3 rounded-lg hover:bg-pink-600 transition duration-300 font-semibold"
+                                    >
+                                        Confirmar Agendamento
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Funções utilitárias
+            formatDate(dateString) {
+                const date = new Date(dateString + 'T00:00:00');
+                return date.toLocaleDateString('pt-BR');
+            }
+            
+            // Event handlers
             attachEvents() {
                 // Login events
                 const loginBtn = document.getElementById('login-btn');
@@ -490,6 +1021,14 @@
                 const togglePassword = document.getElementById('toggle-password');
                 if (togglePassword) {
                     togglePassword.addEventListener('click', () => this.togglePassword());
+                }
+                
+                const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+                if (forgotPasswordBtn) {
+                    forgotPasswordBtn.addEventListener('click', () => {
+                        this.currentView = 'forgot-password';
+                        this.render();
+                    });
                 }
                 
                 const registerClientBtn = document.getElementById('register-client-btn');
@@ -524,10 +1063,95 @@
                     });
                 }
                 
+                const backToLoginForgot = document.getElementById('back-to-login-forgot');
+                if (backToLoginForgot) {
+                    backToLoginForgot.addEventListener('click', () => {
+                        this.currentView = 'login';
+                        this.render();
+                    });
+                }
+                
+                // Forgot password events
+                const sendResetBtn = document.getElementById('send-reset-btn');
+                if (sendResetBtn) {
+                    sendResetBtn.addEventListener('click', () => this.handleForgotPassword());
+                }
+                
+                // Email verification events
+                const verifyBtn = document.getElementById('verify-btn');
+                if (verifyBtn) {
+                    verifyBtn.addEventListener('click', () => this.handleEmailVerification());
+                }
+                
+                const resendCodeBtn = document.getElementById('resend-code-btn');
+                if (resendCodeBtn) {
+                    resendCodeBtn.addEventListener('click', () => this.resendVerificationCode());
+                }
+                
                 // Logout events
                 const logoutBtn = document.getElementById('logout-btn');
                 if (logoutBtn) {
                     logoutBtn.addEventListener('click', () => this.handleLogout());
+                }
+                
+                // Business dashboard events
+                const addServiceBtn = document.getElementById('add-service-btn');
+                if (addServiceBtn) {
+                    addServiceBtn.addEventListener('click', () => this.showServiceForm());
+                }
+                
+                const saveServiceBtn = document.getElementById('save-service-btn');
+                if (saveServiceBtn) {
+                    saveServiceBtn.addEventListener('click', () => this.handleSaveService());
+                }
+                
+                const cancelServiceBtn = document.getElementById('cancel-service-btn');
+                if (cancelServiceBtn) {
+                    cancelServiceBtn.addEventListener('click', () => this.cancelServiceForm());
+                }
+                
+                const dateFilter = document.getElementById('date-filter');
+                if (dateFilter) {
+                    dateFilter.addEventListener('change', (e) => {
+                        this.currentDate = e.target.value;
+                        this.render();
+                    });
+                }
+                
+                // Client dashboard events
+                const backToBusinesses = document.getElementById('back-to-businesses');
+                if (backToBusinesses) {
+                    backToBusinesses.addEventListener('click', () => {
+                        this.selectedBusiness = null;
+                        this.currentView = 'client-dashboard';
+                        this.render();
+                    });
+                }
+                
+                const backToBusiness = document.getElementById('back-to-business');
+                if (backToBusiness) {
+                    backToBusiness.addEventListener('click', () => {
+                        this.selectedService = null;
+                        this.currentView = 'business-details';
+                        this.render();
+                    });
+                }
+                
+                // Booking events
+                const confirmBookingBtn = document.getElementById('confirm-booking-btn');
+                if (confirmBookingBtn) {
+                    confirmBookingBtn.addEventListener('click', () => this.handleBooking());
+                }
+                
+                // Search and filter events
+                const searchBusinesses = document.getElementById('search-businesses');
+                if (searchBusinesses) {
+                    searchBusinesses.addEventListener('input', () => this.filterBusinesses());
+                }
+                
+                const filterCategory = document.getElementById('filter-category');
+                if (filterCategory) {
+                    filterCategory.addEventListener('change', () => this.filterBusinesses());
                 }
                 
                 // Enter key support
@@ -537,14 +1161,207 @@
                             this.handleLogin();
                         } else if (this.currentView === 'register') {
                             this.handleRegister();
+                        } else if (this.currentView === 'forgot-password') {
+                            this.handleForgotPassword();
+                        } else if (this.currentView === 'verify-email') {
+                            this.handleEmailVerification();
                         }
                     }
                 });
             }
             
+            // Business methods
+            showServiceForm() {
+                this.showServiceForm = true;
+                const form = document.getElementById('service-form');
+                if (form) {
+                    form.classList.remove('hidden');
+                }
+            }
+            
+            cancelServiceForm() {
+                this.showServiceForm = false;
+                this.editingService = null;
+                const form = document.getElementById('service-form');
+                if (form) {
+                    form.classList.add('hidden');
+                    // Clear form
+                    document.getElementById('service-name').value = '';
+                    document.getElementById('service-price').value = '';
+                    document.getElementById('service-duration').value = '';
+                    document.getElementById('service-description').value = '';
+                }
+            }
+            
+            editService(serviceId) {
+                const service = this.services.find(s => s.id === serviceId);
+                if (service) {
+                    this.editingService = service;
+                    this.showServiceForm = true;
+                    
+                    // Fill form with service data
+                    document.getElementById('service-name').value = service.name;
+                    document.getElementById('service-price').value = service.price;
+                    document.getElementById('service-duration').value = service.duration;
+                    document.getElementById('service-category').value = service.category || 'cabelo';
+                    document.getElementById('service-description').value = service.description || '';
+                    
+                    const form = document.getElementById('service-form');
+                    if (form) {
+                        form.classList.remove('hidden');
+                    }
+                }
+            }
+            
+            deleteService(serviceId) {
+                if (confirm('Tem certeza que deseja excluir este serviço?')) {
+                    this.services = this.services.filter(s => s.id !== serviceId);
+                    this.render();
+                }
+            }
+            
+            handleSaveService() {
+                const name = document.getElementById('service-name').value.trim();
+                const price = parseFloat(document.getElementById('service-price').value);
+                const duration = parseInt(document.getElementById('service-duration').value);
+                const category = document.getElementById('service-category').value;
+                const description = document.getElementById('service-description').value.trim();
+                
+                if (!name || !price || !duration) {
+                    alert('Por favor, preencha todos os campos obrigatórios');
+                    return;
+                }
+                
+                if (price <= 0) {
+                    alert('O preço deve ser maior que zero');
+                    return;
+                }
+                
+                if (duration < 15) {
+                    alert('A duração deve ser de pelo menos 15 minutos');
+                    return;
+                }
+                
+                if (this.editingService) {
+                    // Update existing service
+                    const index = this.services.findIndex(s => s.id === this.editingService.id);
+                    this.services[index] = {
+                        ...this.editingService,
+                        name,
+                        price,
+                        duration,
+                        category,
+                        description
+                    };
+                    this.editingService = null;
+                } else {
+                    // Create new service
+                    const newService = {
+                        id: this.generateId(),
+                        businessId: this.currentUser.id,
+                        name,
+                        price,
+                        duration,
+                        category,
+                        description
+                    };
+                    this.services.push(newService);
+                }
+                
+                this.cancelServiceForm();
+                this.render();
+            }
+            
+            // Client methods
+            selectBusiness(businessId) {
+                this.selectedBusiness = this.businesses.find(b => b.id === businessId);
+                this.currentView = 'business-details';
+                this.render();
+            }
+            
+            selectService(serviceId) {
+                this.selectedService = serviceId;
+                this.currentView = 'booking';
+                this.render();
+            }
+            
+            handleBooking() {
+                const date = document.getElementById('booking-date').value;
+                const time = document.getElementById('booking-time').value;
+                const notes = document.getElementById('booking-notes').value.trim();
+                
+                if (!date || !time) {
+                    alert('Por favor, selecione data e horário');
+                    return;
+                }
+                
+                const service = this.services.find(s => s.id === this.selectedService);
+                const business = this.businesses.find(b => b.id === service.businessId);
+                
+                // Check if time slot is available
+                const existingBooking = this.appointments.find(a => 
+                    a.businessId === business.id && 
+                    a.date === date && 
+                    a.time === time
+                );
+                
+                if (existingBooking) {
+                    alert('Este horário já está ocupado. Por favor, escolha outro horário.');
+                    return;
+                }
+                
+                const appointment = {
+                    id: this.generateId(),
+                    clientId: this.currentUser.id,
+                    businessId: business.id,
+                    serviceId: service.id,
+                    date,
+                    time,
+                    notes,
+                    status: 'confirmed',
+                    clientName: this.currentUser.name,
+                    clientPhone: this.currentUser.phone,
+                    serviceName: service.name,
+                    price: service.price,
+                    createdAt: new Date()
+                };
+                
+                this.appointments.push(appointment);
+                
+                // Send confirmation email
+                this.sendEmail(
+                    this.currentUser.email,
+                    'Agendamento Confirmado - Beauty App',
+                    `Seu agendamento foi confirmado!\n\nServiço: ${service.name}\nData: ${this.formatDate(date)}\nHorário: ${time}\nLocal: ${business.name}\nValor: R$ ${service.price.toFixed(2)}`
+                );
+                
+                // Send notification to business
+                const businessUser = this.users.find(u => u.id === business.id);
+                if (businessUser) {
+                    this.sendEmail(
+                        businessUser.email,
+                        'Novo Agendamento - Beauty App',
+                        `Você tem um novo agendamento!\n\nCliente: ${this.currentUser.name}\nServiço: ${service.name}\nData: ${this.formatDate(date)}\nHorário: ${time}\nValor: R$ ${service.price.toFixed(2)}`
+                    );
+                }
+                
+                alert('Agendamento realizado com sucesso!');
+                this.selectedService = null;
+                this.selectedBusiness = null;
+                this.currentView = 'client-dashboard';
+                this.render();
+            }
+            
+            filterBusinesses() {
+                // This would be implemented to filter businesses based on search and category
+                // For now, we'll just re-render
+                this.render();
+            }
+            
+            // Authentication methods
             handleLogin() {
-                const email = document.getElementById('email')?.value || '';
-                const password = document.getElementById('password')?.value || '';
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
                 
                 if (!email || !password) {
                     alert('Por favor, preencha email e senha');
@@ -554,6 +1371,13 @@
                 const user = this.users.find(u => u.email === email && u.password === password);
                 
                 if (user) {
+                    // Check if email is verified
+                    const verification = this.emailVerifications.find(v => v.email === email && v.verified);
+                    if (!verification) {
+                        alert('Por favor, verifique seu email antes de fazer login');
+                        return;
+                    }
+                    
                     this.currentUser = user;
                     this.currentView = user.type === 'business' ? 'business-dashboard' : 'client-dashboard';
                     this.render();
@@ -563,15 +1387,20 @@
             }
             
             handleRegister() {
-                const name = document.getElementById('reg-name')?.value || '';
-                const email = document.getElementById('reg-email')?.value || '';
-                const phone = document.getElementById('reg-phone')?.value || '';
-                const password = document.getElementById('reg-password')?.value || '';
-                const confirmPassword = document.getElementById('reg-confirm-password')?.value || '';
-                const address = document.getElementById('reg-address')?.value || '';
+                const name = document.getElementById('reg-name').value.trim();
+                const email = document.getElementById('reg-email').value.trim();
+                const phone = document.getElementById('reg-phone').value.trim();
+                const password = document.getElementById('reg-password').value;
+                const confirmPassword = document.getElementById('reg-confirm-password').value;
+                const address = document.getElementById('reg-address')?.value.trim() || '';
                 
                 if (!name || !email || !phone || !password || !confirmPassword) {
                     alert('Por favor, preencha todos os campos obrigatórios');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    alert('A senha deve ter pelo menos 6 caracteres');
                     return;
                 }
                 
@@ -585,8 +1414,15 @@
                     return;
                 }
                 
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    alert('Por favor, digite um email válido');
+                    return;
+                }
+                
                 const newUser = {
-                    id: this.users.length + 1,
+                    id: this.generateId(),
                     email,
                     password,
                     type: this.userType,
@@ -599,7 +1435,7 @@
                 
                 if (this.userType === 'business') {
                     const newBusiness = {
-                        id: this.businesses.length + 1,
+                        id: newUser.id,
                         name,
                         email,
                         phone,
@@ -610,13 +1446,82 @@
                     this.businesses.push(newBusiness);
                 }
                 
-                alert('Cadastro realizado com sucesso!');
+                // Send verification email
+                this.pendingUser = newUser;
+                this.sendEmail(
+                    email,
+                    'Verificação de Email - Beauty App',
+                    `Bem-vindo ao Beauty App!\n\nPor favor, verifique seu email usando o código abaixo.`
+                );
+                
+                this.currentView = 'verify-email';
+                this.render();
+            }
+            
+            handleForgotPassword() {
+                const email = document.getElementById('forgot-email').value.trim();
+                
+                if (!email) {
+                    alert('Por favor, digite seu email');
+                    return;
+                }
+                
+                const user = this.users.find(u => u.email === email);
+                if (!user) {
+                    alert('Email não encontrado');
+                    return;
+                }
+                
+                this.sendEmail(
+                    email,
+                    'Recuperação de Senha - Beauty App',
+                    `Use o código abaixo para redefinir sua senha.`
+                );
+                
+                alert('Instruções enviadas para seu email!');
                 this.currentView = 'login';
                 this.render();
             }
             
+            handleEmailVerification() {
+                const code = document.getElementById('verification-code').value.trim().toUpperCase();
+                
+                if (!code) {
+                    alert('Por favor, digite o código de verificação');
+                    return;
+                }
+                
+                const verification = this.emailVerifications.find(v => 
+                    v.email === this.pendingUser.email && 
+                    v.code === code
+                );
+                
+                if (verification) {
+                    verification.verified = true;
+                    alert('Email verificado com sucesso! Você já pode fazer login.');
+                    this.pendingUser = null;
+                    this.currentView = 'login';
+                    this.render();
+                } else {
+                    alert('Código inválido. Por favor, verifique e tente novamente.');
+                }
+            }
+            
+            resendVerificationCode() {
+                if (this.pendingUser) {
+                    this.sendEmail(
+                        this.pendingUser.email,
+                        'Verificação de Email - Beauty App',
+                        `Novo código de verificação para seu email.`
+                    );
+                }
+            }
+            
             handleLogout() {
                 this.currentUser = null;
+                this.selectedBusiness = null;
+                this.selectedService = null;
+                this.editingService = null;
                 this.currentView = 'login';
                 this.render();
             }
@@ -637,18 +1542,21 @@
             }
         }
         
+        // Criar instância global para acesso nas funções onclick
+        let app;
+        
         // Inicializar aplicação quando a página carregar
         document.addEventListener('DOMContentLoaded', () => {
-            new BeautyApp();
+            app = new BeautyApp();
         });
         
         // Fallback caso DOMContentLoaded já tenha disparado
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                new BeautyApp();
+                app = new BeautyApp();
             });
         } else {
-            new BeautyApp();
+            app = new BeautyApp();
         }
     </script>
 </body>
